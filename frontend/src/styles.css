@@ -1,0 +1,65 @@
+/* Importar Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Work+Sans:wght@400&display=swap');
+
+/* Variables de colores */
+:root {
+    --color-primary: #65558F;
+    --color-secondary: #5F448F;
+    --color-light: #EBE9F2;
+    --color-accent: #B35C9A;
+
+    /* Tipografías */
+    --font-montserrat: 'Montserrat', sans-serif;
+    --font-work-sans: 'Work Sans', sans-serif;
+
+    /* Tamaños de texto */
+    --text-titulo: 38pt;
+    --text-subtitulo: 30pt;
+    --text-nombre-app: 20pt;
+    --text-normal: 16pt;
+}
+
+/* Estilos globales */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-work-sans);
+    font-size: var(--text-normal);
+    color: var(--color-primary);
+    background-color: #ffffff;
+}
+
+/* Tipografías para títulos */
+h1,
+.titulo {
+    font-family: var(--font-montserrat);
+    font-weight: 700;
+    font-size: var(--text-titulo);
+    color: var(--color-primary);
+}
+
+h2,
+.subtitulo {
+    font-family: var(--font-montserrat);
+    font-weight: 600;
+    font-size: var(--text-subtitulo);
+    color: var(--color-secondary);
+}
+
+h3,
+.nombre-aplicativo {
+    font-family: var(--font-montserrat);
+    font-weight: 600;
+    font-size: var(--text-nombre-app);
+    color: var(--color-primary);
+}
+
+p,
+.texto {
+    font-family: var(--font-work-sans);
+    font-size: var(--text-normal);
+}

@@ -1,0 +1,143 @@
+<div class="sidebar-container" [class.expanded]="isExpanded">
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <span class="logo-icon">❓</span>
+        <h2>FAQ</h2>
+      </div>
+      <button class="toggle-btn" (click)="toggleSidebar()" title="Expandir/Contraer menú">
+        ☰
+      </button>
+    </div>
+
+    <ul class="sidebar-menu">
+      <li>
+        <button class="menu-item" (click)="irA('/categorias')" title="Ver todas las categorías">
+          <span class="icon">🏠</span>
+          <span class="label">Inicio</span>
+        </button>
+      </li>
+      
+      <li>
+        <button class="menu-item" (click)="openAddModuloModal()">
+          <span class="icon">➕</span>
+          <span class="label">Crear Nuevo</span>
+        </button>
+      </li>
+      
+      <li class="divider"></li>
+      
+      <li>
+        <button class="menu-item logout-btn" (click)="logout()" title="Cerrar sesión y volver al login">
+          <span class="icon">🚪</span>
+          <span class="label">Salir</span>
+        </button>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- Modal para agregar módulo -->
+  <div *ngIf="showAddModuloModal" class="modal-overlay" (click)="closeAddModuloModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>✨ Crear una Nueva Sección</h3>
+        <button class="close-btn" (click)="closeAddModuloModal()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="modal-intro">
+          <p>Completa los datos para crear una nueva sección en tu base de datos.</p>
+        </div>
+
+        <form (ngSubmit)="agregarModulo()">
+          <!-- Campo: Nombre -->
+          <div class="form-group">
+            <label for="nombre">
+              <span class="label-icon">📝</span>
+              <span>¿Cuál es el nombre de la sección?</span>
+            </label>
+            <input
+              type="text"
+              id="nombre"
+              class="form-control"
+              [(ngModel)]="nuevoModulo.nombre"
+              name="nombre"
+              placeholder="Ej: Crear un usuario, Reportes mensuales"
+              required
+            />
+          </div>
+
+          <!-- Campo: Descripción -->
+          <div class="form-group">
+            <label for="descripcion">
+              <span class="label-icon">💬</span>
+              <span>Descripción (opcional)</span>
+            </label>
+            <textarea
+              id="descripcion"
+              class="form-control"
+              [(ngModel)]="nuevoModulo.descripcion"
+              name="descripcion"
+              placeholder="Explica brevemente de qué trata esta sección..."
+              rows="3"
+            ></textarea>
+          </div>
+
+          <!-- Campo: Sección Padre -->
+          <div class="form-group">
+            <label for="idpadre">
+              <span class="label-icon">📂</span>
+              <span>¿Pertenece a alguna categoría?</span>
+            </label>
+            <select
+              id="idpadre"
+              class="form-control"
+              [(ngModel)]="nuevoModulo.idpadre"
+              name="idpadre"
+            >
+              <option [value]="null">✨ Crear como categoría principal (aparecerá en el inicio)</option>
+              <optgroup label="━━━━━━━━━━━━━━━━━">
+                <option *ngFor="let modulo of modulosPadre" [value]="modulo.id">
+                  📁 {{ modulo.nombre }}
+                </option>
+              </optgroup>
+            </select>
+          </div>
+
+          <!-- Campo: Resumen selección -->
+          <div class="form-group preview-box">
+            <strong>📌 Vista previa:</strong>
+            <div class="preview-content">
+              <p *ngIf="!nuevoModulo.idpadre" class="preview-text">
+                <span class="badge">NUEVA CATEGORÍA</span>
+                <span>Se mostrará como una nueva opción en la página de inicio</span>
+              </p>
+              <p *ngIf="nuevoModulo.idpadre" class="preview-text">
+                <span class="badge subcategory">SUBCATEGORÍA</span>
+                <span>Se mostrará dentro de: <strong>{{ getNombreModuloPadre(nuevoModulo.idpadre) }}</strong></span>
+              </p>
+            </div>
+          </div>
+
+          <!-- Mostrar errores -->
+          <div *ngIf="error" class="error-message">
+            <span class="error-icon">⚠️</span>
+            <span>{{ error }}</span>
+          </div>
+
+          <!-- Botones -->
+          <div class="form-buttons">
+            <button type="submit" class="btn-primary" [disabled]="loading">
+              <span *ngIf="!loading">✓ Crear Sección</span>
+              <span *ngIf="loading">⏳ Creando...</span>
+            </button>
+            <button type="button" class="btn-secondary" (click)="closeAddModuloModal()" [disabled]="loading">
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

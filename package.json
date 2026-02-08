@@ -1,0 +1,15 @@
+{
+  "name": "faq2.0",
+  "version": "1.0.0",
+  "description": "Sistema de preguntas frecuentes con backend PHP y frontend Angular",
+  "scripts": {
+    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+    "start:backend": "cd backend && php artisan serve",
+    "start:frontend": "cd frontend && npm start",
+    "install:all": "cd frontend && npm install",
+    "dev": "concurrently -n \"BACK,FRONT\" -c \"bgBlue.bold,bgMagenta.bold\" \"npm run start:backend\" \"npm run start:frontend\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

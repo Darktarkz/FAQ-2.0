@@ -1,0 +1,52 @@
+<div class="categorias-container">
+  <div class="categories-header">
+    <div class="header-content">
+      <h1>📚 Centro de Información</h1>
+      <p class="subtitle">Explora nuestras áreas de interés y descubre toda la información que necesitas</p>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="loading">
+    <div class="spinner"></div>
+    <p>Cargando áreas...</p>
+  </div>
+
+  <div *ngIf="!loading" class="categories-wrapper">
+    <div class="categories-grid">
+      <div *ngFor="let categoria of categorias" 
+           class="category-card">
+        
+        <div class="card-header">
+          <div class="card-icon">
+            {{ categoria.icono || '📁' }}
+          </div>
+        </div>
+
+        <div class="card-body">
+          <h2 class="card-title">{{ categoria.nombre }}</h2>
+          <p *ngIf="categoria.descripcion" class="card-description">
+            {{ categoria.descripcion }}
+          </p>
+          <p *ngIf="!categoria.descripcion" class="card-description placeholder">
+            Accede a toda la información disponible en esta área
+          </p>
+        </div>
+
+        <div class="card-footer">
+          <button class="btn-explore" 
+                  type="button"
+                  (click)="irAModulos(categoria.id)">
+            <span>Acceder</span>
+            <span class="arrow">→</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="!loading && categorias.length === 0" class="empty-state">
+    <p class="empty-icon">📭</p>
+    <h3>No hay áreas disponibles</h3>
+    <p>Por favor, contacta al administrador</p>
+  </div>
+</div>

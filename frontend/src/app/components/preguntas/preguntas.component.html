@@ -1,0 +1,160 @@
+<div class="faq-container">
+  <!-- Header -->
+  <header class="faq-header">
+    <div class="header-content">
+      <div class="Logos-header">
+        <img src="/idartes-logo.png" alt="Logo IDARTES" class="logo-idartes" />
+        <img
+          src="/Logo_Comunicarte_Idartes.png"
+          alt="Logo Comunicarte IDARTES"
+          class="logo-comunicarte"
+        />
+      </div>
+      <h1>❔Preguntas Frecuentes</h1>
+      <p class="subtitle">Encuentra respuestas a las preguntas más comunes</p>
+    </div>
+    <button class="btn-logout" (click)="logout()" *ngIf="authService.isLoggedIn()">
+      🚪 Cerrar sesión
+    </button>
+  </header>
+
+  <!-- Breadcrumb Navigation -->
+  <div class="breadcrumb" *ngIf="breadcrumb.length > 0">
+    <div class="breadcrumb-path">
+      <button class="breadcrumb-item" (click)="volverInicio()">🏠 Inicio</button>
+      <span class="breadcrumb-separator" *ngIf="breadcrumb.length > 0">›</span>
+      <ng-container *ngFor="let item of breadcrumb; let i = index">
+        <button
+          class="breadcrumb-item"
+          [class.active]="i === breadcrumb.length - 1"
+          (click)="navegarBreadcrumb(i)"
+        >
+          {{ item.nombre }}
+        </button>
+        <span class="breadcrumb-separator" *ngIf="i < breadcrumb.length - 1">›</span>
+      </ng-container>
+    </div>
+    <div class="breadcrumb-actions">
+      <button class="btn-back" (click)="retroceder()" title="Retroceder">← Atrás</button>
+      <button class="btn-home" (click)="volverInicio()" title="Ir al inicio">🏠</button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-state" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Cargando información...</p>
+  </div>
+
+  <!-- Error State -->
+  <div class="error-state" *ngIf="error">
+    <p>{{ error }}</p>
+  </div>
+
+  <!-- Vista Inicial: Categorías Principales -->
+  <div class="categories-grid" *ngIf="!categoriaSeleccionada && !loading">
+    <div
+      class="category-card"
+      *ngFor="let categoria of categorias"
+      (click)="seleccionarCategoria(categoria)"
+    >
+      <div class="card-normal-content">
+        <div class="card-icon">
+          <img
+            *ngIf="categoria.icono"
+            [src]="getIconUrl(categoria.icono)"
+            [alt]="categoria.nombre"
+            class="icon-image"
+          />
+          <span *ngIf="!categoria.icono" class="icon-emoji">📁</span>
+        </div>
+        <h3 class="card-title-visible">{{ categoria.nombre }}</h3>
+      </div>
+
+      <div class="card__content">
+        <h3 class="card__title">{{ categoria.nombre }}</h3>
+        <p class="card__description" *ngIf="categoria.descripcion">{{ categoria.descripcion }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vista de Submódulos -->
+  <div class="modules-grid" *ngIf="modulosActuales.length > 0 && !loading">
+    <div
+      class="module-card"
+      *ngFor="let modulo of modulosActuales"
+      (click)="seleccionarModulo(modulo)"
+    >
+      <div class="module-normal-content">
+        <div class="module-icon">
+          <img
+            *ngIf="modulo.icono"
+            [src]="getIconUrl(modulo.icono)"
+            [alt]="modulo.nombre"
+            class="icon-image"
+          />
+          <span *ngIf="!modulo.icono" class="icon-emoji">📂</span>
+        </div>
+        <h4 class="module-title-visible">{{ modulo.nombre }}</h4>
+      </div>
+
+      <div class="module__content">
+        <h4 class="module__title">{{ modulo.nombre }}</h4>
+        <p class="module__description" *ngIf="modulo.descripcion">{{ modulo.descripcion }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vista de Preguntas (Accordion) -->
+  <div
+    class="questions-section"
+    *ngIf="preguntasFiltradas.length > 0 && modulosActuales.length === 0"
+  >
+    <div class="questions-header">
+      <h2>💬 Preguntas y Respuestas</h2>
+      <p class="questions-count">{{ preguntasFiltradas.length }} pregunta(s) disponible(s)</p>
+    </div>
+
+    <div class="questions-accordion">
+      <div
+        class="accordion-item"
+        *ngFor="let pregunta of preguntasFiltradas; let i = index"
+        [class.expanded]="preguntaExpandida === i"
+      >
+        <button class="accordion-header" (click)="togglePregunta(i)">
+          <div class="question-number">{{ i + 1 }}</div>
+          <div class="question-text">
+            <strong>{{ pregunta.Pregunta }}</strong>
+            <span class="app-badge" *ngIf="pregunta.Submodulo">{{ pregunta.Submodulo }}</span>
+          </div>
+          <div class="accordion-icon">
+            {{ preguntaExpandida === i ? '−' : '+' }}
+          </div>
+        </button>
+
+        <div class="accordion-body" *ngIf="preguntaExpandida === i">
+          <div class="answer-content">
+            <div class="answer-icon">💡</div>
+            <p [innerHTML]="sanitizar(pregunta.Respuesta)"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estado Vacío -->
+  <div
+    class="empty-state"
+    *ngIf="
+      preguntasFiltradas.length === 0 &&
+      modulosActuales.length === 0 &&
+      categoriaSeleccionada &&
+      !loading
+    "
+  >
+    <div class="empty-icon">📭</div>
+    <h3>No hay preguntas disponibles</h3>
+    <p>Aún no se han agregado preguntas para esta sección</p>
+    <button class="btn-back" (click)="volverInicio()">← Volver al inicio</button>
+  </div>
+</div>
