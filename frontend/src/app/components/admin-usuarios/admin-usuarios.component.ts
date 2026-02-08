@@ -49,7 +49,7 @@ import { ModuloService, Modulo } from '../../services/modulo.service';
               </div>
               <div class="modulos-list" *ngIf="modulos.length; else noModulos">
                 <label *ngFor="let modulo of modulos" class="modulo-item">
-                  <input type="checkbox" [value]="modulo.id" [checked]="modulo.id !== undefined && form.modulos.includes(modulo.id)" (change)="modulo.id !== undefined && toggleModulo(modulo.id)" />
+                  <input type="checkbox" [value]="modulo.id" [checked]="modulo.id !== undefined && form.modulos?.includes(modulo.id)" (change)="modulo.id !== undefined && toggleModulo(modulo.id)" />
                   <span>{{ modulo.nombre }}</span>
                   <small *ngIf="modulo.idpadre">Hijo de ID {{ modulo.idpadre }}</small>
                 </label>
