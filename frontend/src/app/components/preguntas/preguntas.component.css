@@ -603,6 +603,23 @@
   font-size: 15px;
 }
 
+/* Sección de soporte al final de cada respuesta */
+.answer-support {
+  margin-top: 20px;
+  padding: 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
+  border: 2px dashed #65558F;
+  text-align: center;
+}
+
+.support-text {
+  margin: 0 0 15px 0;
+  color: #495057;
+  font-size: 14px;
+  font-weight: 500;
+}
+
 /* Empty State */
 .empty-state {
   max-width: 600px;

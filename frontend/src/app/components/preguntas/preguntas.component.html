@@ -155,6 +155,16 @@
             <div class="answer-icon">💡</div>
             <p [innerHTML]="sanitizar(pregunta.Respuesta)"></p>
           </div>
+          
+          <!-- Botón de soporte al final de cada respuesta -->
+          <div class="answer-support">
+            <p class="support-text">¿Esta respuesta no resolvió tu problema?</p>
+            <app-boton-soporte 
+              [moduloId]="moduloActualId"
+              [moduloNombre]="moduloActualNombre"
+              posicion="static">
+            </app-boton-soporte>
+          </div>
         </div>
       </div>
     </div>

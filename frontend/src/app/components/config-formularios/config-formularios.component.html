@@ -1,0 +1,124 @@
+<div class="config-container">
+  <div class="header-config">
+    <div class="header-icon">⚙️</div>
+    <h2>Configuración de Formularios por Módulo</h2>
+    <p class="subtitle">
+      Personaliza qué campos aparecen en el formulario de soporte según cada módulo
+    </p>
+  </div>
+
+  <!-- Mensajes -->
+  <div *ngIf="error" class="alert alert-error">
+    {{ error }}
+    <button (click)="error = ''" class="btn-close">×</button>
+  </div>
+
+  <div *ngIf="exito" class="alert alert-success">
+    {{ exito }}
+    <button (click)="exito = ''" class="btn-close">×</button>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="cargando" class="loading-state">
+    <div class="spinner"></div>
+    <p>Cargando configuraciones...</p>
+  </div>
+
+  <!-- Lista de módulos -->
+  <div *ngIf="!cargando" class="modulos-grid">
+    <div *ngFor="let moduloConfig of configuraciones" class="modulo-card">
+      <div class="modulo-header">
+        <h3>{{ moduloConfig.modulo_nombre }}</h3>
+        <span class="modulo-id">ID: {{ moduloConfig.modulo_id }}</span>
+      </div>
+
+      <div class="config-campos">
+        <p class="info-text">
+          <strong>Los campos siempre visibles son:</strong> Nombre Completo, Correo y Descripción
+          del Problema
+        </p>
+
+        <div class="campo-config">
+          <label class="campo-label">
+            <input
+              type="checkbox"
+              [(ngModel)]="moduloConfig.config.mostrar_tipo_identificacion"
+              class="campo-checkbox"
+            />
+            <span class="campo-nombre">Tipo de Identificación</span>
+          </label>
+        </div>
+
+        <div class="campo-config">
+          <label class="campo-label">
+            <input
+              type="checkbox"
+              [(ngModel)]="moduloConfig.config.mostrar_cedula"
+              class="campo-checkbox"
+            />
+            <span class="campo-nombre">Número de Identificación</span>
+          </label>
+        </div>
+
+        <div class="campo-config">
+          <label class="campo-label">
+            <input
+              type="checkbox"
+              [(ngModel)]="moduloConfig.config.mostrar_telefono"
+              class="campo-checkbox"
+            />
+            <span class="campo-nombre">Teléfono</span>
+          </label>
+        </div>
+
+        <div class="campo-config">
+          <label class="campo-label">
+            <input
+              type="checkbox"
+              [(ngModel)]="moduloConfig.config.mostrar_numero_contrato"
+              class="campo-checkbox"
+            />
+            <span class="campo-nombre">Número de Contrato</span>
+          </label>
+        </div>
+
+        <div class="campo-config">
+          <label class="campo-label">
+            <input
+              type="checkbox"
+              [(ngModel)]="moduloConfig.config.mostrar_screenshot"
+              class="campo-checkbox"
+            />
+            <span class="campo-nombre">Captura de Pantalla</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="modulo-actions">
+        <button
+          class="btn btn-guardar"
+          (click)="guardarConfiguracion(moduloConfig)"
+          [disabled]="guardando === moduloConfig.modulo_id"
+        >
+          <span *ngIf="guardando === moduloConfig.modulo_id">⏳ Guardando...</span>
+          <span *ngIf="guardando !== moduloConfig.modulo_id">💾 Guardar</span>
+        </button>
+
+        <button
+          class="btn btn-restablecer"
+          (click)="restablecerConfiguracion(moduloConfig)"
+          [disabled]="guardando === moduloConfig.modulo_id"
+        >
+          🔄 Restablecer
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty state -->
+  <div *ngIf="!cargando && configuraciones.length === 0" class="empty-state">
+    <div class="empty-icon">📦</div>
+    <h3>No hay módulos configurados</h3>
+    <p>Agrega módulos primero para poder configurar sus formularios</p>
+  </div>
+</div>

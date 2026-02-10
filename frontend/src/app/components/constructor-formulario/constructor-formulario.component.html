@@ -1,0 +1,388 @@
+<div class="constructor-container">
+  <!-- Header -->
+  <div class="constructor-header">
+    <div class="d-flex justify-content-between align-items-center">
+      <h2 class="gradient-text">
+        {{ modoEdicion ? '✏️ Editar Formulario' : '➕ Crear Formulario' }}
+      </h2>
+      <div class="btn-group">
+        <button class="btn btn-secondary btn-action" (click)="cancelar()">
+          <i class="bi bi-x-circle"></i> Cancelar
+        </button>
+        <button
+          class="btn btn-info btn-action"
+          (click)="toggleVistaPrevia()"
+          [class.active]="vistaPrevia"
+        >
+          <i class="bi bi-eye"></i> {{ vistaPrevia ? 'Editar' : 'Vista Previa' }}
+        </button>
+        <button
+          class="btn btn-success btn-action"
+          (click)="validarYGuardar()"
+          [disabled]="guardando"
+        >
+          <span *ngIf="guardando" class="spinner-border spinner-border-sm me-2"></span>
+          <i *ngIf="!guardando" class="bi bi-save"></i>
+          {{ guardando ? 'Guardando...' : 'Guardar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alerts -->
+  <div *ngIf="error" class="alert alert-danger alert-dismissible">
+    <pre style="white-space: pre-wrap; margin: 0">{{ error }}</pre>
+    <button class="btn-close" (click)="error = ''"></button>
+  </div>
+
+  <div *ngIf="exito" class="alert alert-success">
+    {{ exito }}
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="cargando" class="text-center py-5">
+    <div class="spinner-border text-primary"></div>
+    <p class="mt-3">Cargando formulario...</p>
+  </div>
+
+  <!-- Constructor Principal -->
+  <div *ngIf="!cargando" class="constructor-body">
+    <!-- Vista de Edición -->
+    <div *ngIf="!vistaPrevia" class="row g-3">
+      <!-- Panel Izquierdo: Paleta de Campos -->
+      <div class="col-md-3">
+        <div class="panel-paleta">
+          <h5 class="panel-title">🎨 Campos Disponibles</h5>
+          <div class="campo-item" *ngFor="let tipo of tiposCampos" (click)="agregarCampo(tipo)">
+            <span class="campo-icono">{{ tipo.icono }}</span>
+            <span class="campo-nombre">{{ tipo.nombre }}</span>
+            <i class="bi bi-plus-circle ms-auto"></i>
+          </div>
+
+          <hr />
+
+          <!-- Configuración General -->
+          <h5 class="panel-title mt-4">⚙️ Configuración</h5>
+
+          <div class="mb-3">
+            <label class="form-label">Nombre del Formulario</label>
+            <input
+              type="text"
+              class="form-control"
+              [(ngModel)]="formulario.nombre"
+              placeholder="Ej: Formulario de Soporte Técnico"
+            />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Descripción</label>
+            <textarea
+              class="form-control"
+              rows="3"
+              [(ngModel)]="formulario.descripcion"
+              placeholder="Describe el propósito del formulario"
+            ></textarea>
+          </div>
+
+          <div class="mb-3">
+            <div class="form-check form-switch">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="switchActivo"
+                [(ngModel)]="formulario.activo"
+              />
+              <label class="form-check-label" for="switchActivo"> Formulario Activo </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel Central: Canvas de Construcción -->
+      <div class="col-md-6">
+        <div class="panel-canvas">
+          <h5 class="panel-title">🖼️ Canvas del Formulario</h5>
+
+          <div *ngIf="formulario.campos.length === 0" class="empty-canvas">
+            <i class="bi bi-inbox" style="font-size: 3rem; opacity: 0.3"></i>
+            <p class="text-muted mt-3">Arrastra campos desde la paleta de la izquierda</p>
+          </div>
+
+          <!-- Lista de Campos -->
+          <div class="campos-lista">
+            <div
+              *ngFor="let campo of formulario.campos; let i = index"
+              class="campo-canvas"
+              [class.campo-seleccionado]="campoIndex === i"
+              (click)="seleccionarCampo(campo, i)"
+            >
+              <div class="campo-canvas-header">
+                <span class="campo-icono">{{ getIconoPorTipo(campo.tipo) }}</span>
+                <strong>{{ campo.etiqueta }}</strong>
+                <span *ngIf="campo.requerido" class="badge bg-danger ms-2">Requerido</span>
+                <span class="ms-auto badge bg-secondary">{{ campo.tipo }}</span>
+              </div>
+
+              <div class="campo-canvas-body">
+                <small class="text-muted d-block">
+                  <code>{{ campo.nombre_campo }}</code>
+                </small>
+                <small *ngIf="campo.descripcion_ayuda" class="text-info">
+                  💡 {{ campo.descripcion_ayuda }}
+                </small>
+              </div>
+
+              <div class="campo-canvas-actions">
+                <button
+                  class="btn btn-sm btn-outline-secondary"
+                  (click)="moverCampo(i, 'arriba'); $event.stopPropagation()"
+                  [disabled]="i === 0"
+                  title="Mover arriba"
+                >
+                  <i class="bi bi-arrow-up"></i>
+                </button>
+                <button
+                  class="btn btn-sm btn-outline-secondary"
+                  (click)="moverCampo(i, 'abajo'); $event.stopPropagation()"
+                  [disabled]="i === formulario.campos.length - 1"
+                  title="Mover abajo"
+                >
+                  <i class="bi bi-arrow-down"></i>
+                </button>
+                <button
+                  class="btn btn-sm btn-outline-info"
+                  (click)="duplicarCampo(i); $event.stopPropagation()"
+                  title="Duplicar"
+                >
+                  <i class="bi bi-files"></i>
+                </button>
+                <button
+                  class="btn btn-sm btn-outline-danger"
+                  (click)="eliminarCampo(i); $event.stopPropagation()"
+                  title="Eliminar"
+                >
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel Derecho: Propiedades del Campo -->
+      <div class="col-md-3">
+        <div class="panel-propiedades">
+          <h5 class="panel-title">🔧 Propiedades del Campo</h5>
+
+          <div *ngIf="!campoSeleccionado" class="text-center text-muted py-5">
+            <i class="bi bi-hand-index" style="font-size: 2rem"></i>
+            <p class="mt-3">Selecciona un campo<br />para editarlo</p>
+          </div>
+
+          <div *ngIf="campoSeleccionado">
+            <div class="mb-3">
+              <label class="form-label">Etiqueta *</label>
+              <input
+                type="text"
+                class="form-control"
+                [(ngModel)]="campoSeleccionado.etiqueta"
+                placeholder="Etiqueta visible"
+              />
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Nombre del Campo *</label>
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                [(ngModel)]="campoSeleccionado.nombre_campo"
+                placeholder="nombre_variable"
+              />
+              <small class="text-muted">Sin espacios, use guión bajo</small>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Placeholder</label>
+              <input
+                type="text"
+                class="form-control"
+                [(ngModel)]="campoSeleccionado.placeholder"
+                placeholder="Texto de ejemplo"
+              />
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Texto de Ayuda</label>
+              <textarea
+                class="form-control"
+                rows="2"
+                [(ngModel)]="campoSeleccionado.descripcion_ayuda"
+                placeholder="Ayuda para el usuario"
+              ></textarea>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Tamaño (columnas)</label>
+              <select class="form-select" [(ngModel)]="campoSeleccionado.tamano_columna">
+                <option [value]="12">Completo (12)</option>
+                <option [value]="6">Medio (6)</option>
+                <option [value]="4">Tercio (4)</option>
+                <option [value]="3">Cuarto (3)</option>
+              </select>
+            </div>
+
+            <!-- Opciones para select/radio -->
+            <div *ngIf="['select', 'radio'].includes(campoSeleccionado.tipo)" class="mb-3">
+              <label class="form-label">Opciones *</label>
+
+              <!-- Lista de opciones existentes -->
+              <div class="opciones-lista mb-2">
+                <div
+                  *ngFor="
+                    let opcion of campoSeleccionado.opciones || [];
+                    let i = index;
+                    trackBy: trackByIndex
+                  "
+                  class="opcion-item"
+                >
+                  <span class="opcion-numero">{{ i + 1 }}</span>
+                  <input
+                    type="text"
+                    class="form-control form-control-sm opcion-input"
+                    [value]="opcion"
+                    (input)="actualizarOpcion(i, $any($event.target).value)"
+                    placeholder="Valor de la opción"
+                  />
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-danger opcion-btn-eliminar"
+                    (click)="eliminarOpcion(i)"
+                    title="Eliminar opción"
+                  >
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+
+                <div
+                  *ngIf="!campoSeleccionado.opciones || campoSeleccionado.opciones.length === 0"
+                  class="text-muted text-center py-2"
+                >
+                  <small>No hay opciones. Agrega al menos una.</small>
+                </div>
+              </div>
+
+              <!-- Botón para agregar nueva opción -->
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-success w-100"
+                (click)="agregarOpcion()"
+              >
+                <i class="bi bi-plus-circle"></i> Agregar Opción
+              </button>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Regla de Validación</label>
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                [(ngModel)]="campoSeleccionado.validacion"
+                placeholder="regex:^[0-9]+$"
+              />
+              <small class="text-muted">Opcional: regex, min, max, etc.</small>
+            </div>
+
+            <div class="mb-3">
+              <div class="form-check">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="checkRequerido"
+                  [(ngModel)]="campoSeleccionado.requerido"
+                />
+                <label class="form-check-label" for="checkRequerido"> Campo Requerido </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vista Previa -->
+    <div *ngIf="vistaPrevia" class="vista-previa">
+      <div class="preview-container">
+        <h3 class="mb-4">{{ formulario.nombre || 'Formulario Sin Nombre' }}</h3>
+        <p *ngIf="formulario.descripcion" class="text-muted">{{ formulario.descripcion }}</p>
+
+        <form class="row g-3">
+          <div *ngFor="let campo of formulario.campos" [class]="'col-md-' + campo.tamano_columna">
+            <label class="form-label">
+              {{ campo.etiqueta }}
+              <span *ngIf="campo.requerido" class="text-danger">*</span>
+            </label>
+
+            <!-- Texto -->
+            <input
+              *ngIf="['text', 'email', 'tel', 'number', 'date'].includes(campo.tipo)"
+              [type]="campo.tipo"
+              class="form-control"
+              [placeholder]="campo.placeholder || ''"
+            />
+
+            <!-- Textarea -->
+            <textarea
+              *ngIf="campo.tipo === 'textarea'"
+              class="form-control"
+              rows="3"
+              [placeholder]="campo.placeholder || ''"
+            ></textarea>
+
+            <!-- Select -->
+            <select *ngIf="campo.tipo === 'select'" class="form-select">
+              <option value="">Seleccione...</option>
+              <option *ngFor="let opcion of campo.opciones" [value]="opcion">
+                {{ opcion }}
+              </option>
+            </select>
+
+            <!-- File -->
+            <input *ngIf="campo.tipo === 'file'" type="file" class="form-control" />
+
+            <!-- Checkbox -->
+            <div *ngIf="campo.tipo === 'checkbox'" class="form-check">
+              <input class="form-check-input" type="checkbox" />
+              <label class="form-check-label">
+                {{ campo.placeholder || 'Acepto' }}
+              </label>
+            </div>
+
+            <!-- Radio -->
+            <div *ngIf="campo.tipo === 'radio'">
+              <div *ngFor="let opcion of campo.opciones; let i = index" class="form-check">
+                <input
+                  class="form-check-input"
+                  type="radio"
+                  [name]="campo.nombre_campo"
+                  [id]="campo.nombre_campo + '_' + i"
+                />
+                <label class="form-check-label" [for]="campo.nombre_campo + '_' + i">
+                  {{ opcion }}
+                </label>
+              </div>
+            </div>
+
+            <small *ngIf="campo.descripcion_ayuda" class="form-text text-muted">
+              💡 {{ campo.descripcion_ayuda }}
+            </small>
+          </div>
+
+          <div class="col-12 mt-4">
+            <button type="button" class="btn btn-primary" disabled>
+              Enviar (Solo Vista Previa)
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

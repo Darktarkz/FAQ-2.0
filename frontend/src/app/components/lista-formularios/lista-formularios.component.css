@@ -1,0 +1,269 @@
+.container {
+    max-width: 1200px;
+    padding: 30px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+}
+
+.table {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 15px 50px rgba(102, 126, 234, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+}
+
+.table thead {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.table th {
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+    padding: 1.2rem 1rem;
+    border: none;
+}
+
+.btn-group-sm>.btn {
+    padding: 0.4rem 0.7rem;
+    font-size: 0.875rem;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    margin: 0 2px;
+}
+
+.btn-group-sm>.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.badge {
+    font-size: 0.85rem;
+    padding: 0.5rem 0.9rem;
+    border-radius: 20px;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.badge:hover {
+    transform: scale(1.05);
+}
+
+.bg-info {
+    background: linear-gradient(135deg, #3a7bd5 0%, #00d2ff 100%) !important;
+}
+
+.bg-success {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%) !important;
+}
+
+.bg-secondary {
+    background: linear-gradient(135deg, #606c88 0%, #3f4c6b 100%) !important;
+}
+
+.form-check-input {
+    cursor: pointer;
+    width: 2.8rem;
+    height: 1.4rem;
+    background-color: #ddd;
+    border: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1) inset;
+}
+
+.form-check-input:checked {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    box-shadow: 0 2px 10px rgba(17, 153, 142, 0.4);
+}
+
+.form-check-label {
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-left: 8px;
+}
+
+.modal.show {
+    display: block;
+}
+
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+button i {
+    font-size: 0.9rem;
+}
+
+.alert {
+    border-radius: 15px;
+    padding: 1.2rem 1.5rem;
+    border: none;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Hover effects */
+.table tbody tr {
+    transition: all 0.3s ease;
+    border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+}
+
+.table tbody tr:hover {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+    transform: translateX(5px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1) inset;
+}
+
+.btn-outline-primary:hover,
+.btn-outline-success:hover,
+.btn-outline-info:hover,
+.btn-outline-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn-outline-primary {
+    border-color: #667eea;
+    color: #667eea;
+}
+
+.btn-outline-primary:hover {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: transparent;
+}
+
+.btn-outline-success {
+    border-color: #11998e;
+    color: #11998e;
+}
+
+.btn-outline-success:hover {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    border-color: transparent;
+}
+
+.btn-outline-info {
+    border-color: #3a7bd5;
+    color: #3a7bd5;
+}
+
+.btn-outline-info:hover {
+    background: linear-gradient(135deg, #3a7bd5 0%, #00d2ff 100%);
+    border-color: transparent;
+}
+
+.btn-outline-danger {
+    border-color: #eb3349;
+    color: #eb3349;
+}
+
+.btn-outline-danger:hover {
+    background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+    border-color: transparent;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    border-radius: 12px;
+    padding: 0.7rem 1.5rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.btn-primary:hover {
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    transform: translateY(-2px);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .table {
+        font-size: 0.85rem;
+    }
+
+    .btn-group-sm>.btn {
+        padding: 0.2rem 0.4rem;
+    }
+
+    .badge {
+        font-size: 0.75rem;
+    }
+}
+
+/* Header Styles */
+.header-title {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 249, 255, 0.95) 100%);
+    padding: 1.5rem 2rem;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.gradient-text {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 800;
+    font-size: 2rem;
+    letter-spacing: -0.5px;
+    margin: 0;
+}
+
+.btn-create {
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-create::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.btn-create:hover::before {
+    width: 300px;
+    height: 300px;
+}

@@ -6,11 +6,12 @@ import { PreguntaService, Pregunta } from '../../services/pregunta.service';
 import { CategoriaService, Modulo } from '../../services/categoria.service';
 import { AuthService } from '../../services/auth.service';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { BotonSoporteComponent } from '../boton-soporte/boton-soporte.component';
 
 @Component({
   selector: 'app-preguntas',
   standalone: true,
-  imports: [FormsModule, CommonModule],
+  imports: [FormsModule, CommonModule, BotonSoporteComponent],
   templateUrl: './preguntas.component.html',
   styleUrl: './preguntas.component.css'
 })
@@ -181,6 +182,22 @@ export class PreguntasComponent implements OnInit {
 
   sanitizar(texto: string): SafeHtml {
     return this.sanitizer.bypassSecurityTrustHtml(texto || '');
+  }
+
+  // Obtener ID y nombre del módulo actual (último del breadcrumb)
+  get moduloActualId(): number {
+    if (this.breadcrumb.length > 0) {
+      const ultimoModulo = this.breadcrumb[this.breadcrumb.length - 1];
+      return Number(ultimoModulo.id) || 0;
+    }
+    return 0;
+  }
+
+  get moduloActualNombre(): string {
+    if (this.breadcrumb.length > 0) {
+      return this.breadcrumb[this.breadcrumb.length - 1].nombre || 'Módulo';
+    }
+    return 'Módulo';
   }
 
   // ========== DRAG AND DROP ==========

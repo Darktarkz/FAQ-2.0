@@ -9,6 +9,10 @@ import { AdminModulosComponent } from './components/admin-modulos/admin-modulos.
 import { AdminCategoriasComponent } from './components/admin-categorias/admin-categorias.component';
 import { AdminLayoutComponent } from './components/admin-layout/admin-layout.component';
 import { AdminUsuariosComponent } from './components/admin-usuarios/admin-usuarios.component';
+import { PaginaSoporteComponent } from './components/pagina-soporte/pagina-soporte.component';
+import { ListaFormulariosComponent } from './components/lista-formularios/lista-formularios.component';
+import { ConstructorFormularioComponent } from './components/constructor-formulario/constructor-formulario.component';
+import { ConfigFormulariosComponent } from './components/config-formularios/config-formularios.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'preguntas', pathMatch: 'full' },
@@ -16,6 +20,10 @@ export const routes: Routes = [
   {
     path: 'preguntas',
     component: PreguntasComponent
+  },
+  {
+    path: 'soporte',
+    component: PaginaSoporteComponent
   },
   {
     path: 'admin',
@@ -41,6 +49,26 @@ export const routes: Routes = [
       {
         path: 'usuarios',
         component: AdminUsuariosComponent
+      },
+      {
+        path: 'formularios',
+        component: ListaFormulariosComponent
+      },
+      {
+        path: 'formularios/nuevo',
+        component: ConstructorFormularioComponent
+      },
+      {
+        path: 'formularios/editar/:id',
+        component: ConstructorFormularioComponent
+      },
+      {
+        path: 'formularios/ver/:id',
+        component: ConstructorFormularioComponent
+      },
+      {
+        path: 'config-formularios',
+        component: ConfigFormulariosComponent
       }
     ]
   },
