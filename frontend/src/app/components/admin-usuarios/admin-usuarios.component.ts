@@ -109,7 +109,7 @@ interface ModuloJerarquico extends Modulo {
                   [(ngModel)]="busquedaModulos" 
                   name="busquedaModulos"
                   placeholder="🔍 Buscar módulo..."
-                  (ngModel Change)="filtrarModulos()"
+                  (ngModelChange)="filtrarModulos()"
                 />
               </div>
 
@@ -298,7 +298,7 @@ interface ModuloJerarquico extends Modulo {
                 [(ngModel)]="busquedaModulosEdicion" 
                 name="busquedaModulosEdicion"
                 placeholder="🔍 Buscar módulo..."
-                (ngModelChange)="filtrarModulosEdicion()"
+                (input)="filtrarModulosEdicion()"
               />
             </div>
 
