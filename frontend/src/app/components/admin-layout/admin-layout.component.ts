@@ -6,7 +6,7 @@ import { AuthService } from '../../services/auth.service';
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [RouterModule, CommonModule],
   template: `
     <div class="admin-container" [class.no-sidebar]="!isPrivileged">
       <aside class="admin-sidebar" *ngIf="isPrivileged">
@@ -24,7 +24,7 @@ import { AuthService } from '../../services/auth.service';
             <span class="icon">📦</span> Módulos
           </a>
           <a *ngIf="isAdmin" routerLink="/admin/usuarios" routerLinkActive="active">
-            <span class="icon">👤</span> Usuarios
+            <span class="icon">👥</span> Usuarios
           </a>
           <a routerLink="/admin/preguntas" routerLinkActive="active">
             <span class="icon">❓</span> Preguntas
@@ -66,7 +66,7 @@ import { AuthService } from '../../services/auth.service';
 
     .admin-sidebar {
       width: 250px;
-      background: linear-gradient(135deg, #65558F 0%, #5F448F 100%);
+      background: #39275c;
       color: white;
       display: flex;
       flex-direction: column;
@@ -79,6 +79,7 @@ import { AuthService } from '../../services/auth.service';
 
       h2 {
         margin: 0;
+        color: #ebe9f2;
         font-size: 1.3em;
       }
     }
@@ -100,7 +101,8 @@ import { AuthService } from '../../services/auth.service';
         border-left: 3px solid transparent;
 
         .icon {
-          font-size: 1.2em;
+          filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.5));
+          font-size: 1.2rem;
         }
 
         &:hover {

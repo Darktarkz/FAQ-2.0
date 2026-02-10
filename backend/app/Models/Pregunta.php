@@ -18,6 +18,7 @@ class Pregunta extends Model
 
     protected $fillable = [
         'Idmodulo',
+        'orden',
         'Aplicativo',
         'Pregunta',
         'Respuesta',

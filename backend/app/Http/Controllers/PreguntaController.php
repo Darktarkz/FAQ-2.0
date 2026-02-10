@@ -16,10 +16,10 @@ class PreguntaController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        // Ordenamos: primero por número inicial en el texto (si lo hay), luego por id
+        // Ordenamos por el campo orden y luego por id
         $query = Pregunta::query()
-            ->orderByRaw("CASE WHEN Pregunta REGEXP '^[0-9]+' THEN CAST(Pregunta AS UNSIGNED) ELSE 999999 END")
-            ->orderBy('id');
+            ->orderBy('orden', 'asc')
+            ->orderBy('ID', 'asc');
 
         // Filtrar por módulo si se proporciona el parámetro
         if ($request->has('id_modulo')) {
@@ -43,6 +43,10 @@ class PreguntaController extends Controller
         ]);
 
         $this->authorizeModulo($request->user(), (int) $validated['Idmodulo']);
+
+        // Obtener el máximo orden actual para el módulo
+        $maxOrden = Pregunta::where('Idmodulo', $validated['Idmodulo'])->max('orden') ?? 0;
+        $validated['orden'] = $maxOrden + 1;
 
         $pregunta = Pregunta::create($validated);
 
@@ -236,6 +240,51 @@ class PreguntaController extends Controller
                 ? 'Vista previa: no se modificó la base de datos' 
                 : "Se limpiaron $contador preguntas exitosamente"
         ]);
+    }
+
+    /**
+     * Reordenar preguntas mediante drag and drop
+     * PUT /api/preguntas/reordenar
+     * 
+     * Recibe un array de IDs en el nuevo orden
+     * Actualiza el campo orden de cada pregunta
+     */
+    public function reordenar(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'preguntas' => 'required|array',
+            'preguntas.*.id' => 'required|integer|exists:preguntas,ID',
+            'preguntas.*.orden' => 'required|integer|min:0',
+        ]);
+
+        try {
+            \DB::beginTransaction();
+
+            foreach ($validated['preguntas'] as $item) {
+                $pregunta = Pregunta::find($item['id']);
+                
+                // Verificar permisos
+                $this->authorizeModulo($request->user(), (int) $pregunta->Idmodulo);
+                
+                $pregunta->orden = $item['orden'];
+                $pregunta->save();
+            }
+
+            \DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Preguntas reordenadas exitosamente',
+                'total_actualizadas' => count($validated['preguntas'])
+            ]);
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al reordenar preguntas: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

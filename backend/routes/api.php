@@ -51,6 +51,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/', [PreguntaController::class, 'store']);         // POST /api/preguntas
         Route::put('/{id}', [PreguntaController::class, 'update']);     // PUT /api/preguntas/{id}
         Route::delete('/{id}', [PreguntaController::class, 'destroy']); // DELETE /api/preguntas/{id}
+        Route::put('/reordenar/batch', [PreguntaController::class, 'reordenar']); // PUT /api/preguntas/reordenar/batch
     });
     
     // CRUD de categorías (solo admin)

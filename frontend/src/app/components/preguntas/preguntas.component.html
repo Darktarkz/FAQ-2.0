@@ -113,6 +113,15 @@
     <div class="questions-header">
       <h2>💬 Preguntas y Respuestas</h2>
       <p class="questions-count">{{ preguntasFiltradas.length }} pregunta(s) disponible(s)</p>
+      <!-- Botón para modo reordenamiento (solo admin) -->
+      <button
+        *ngIf="authService.isAdmin() || authService.hasModulePermissions()"
+        class="btn-reorder"
+        (click)="toggleModoReorden()"
+        [class.active]="modoReorden"
+      >
+        {{ modoReorden ? '✓ Guardar Orden' : '↕️ Reordenar' }}
+      </button>
     </div>
 
     <div class="questions-accordion">
@@ -120,19 +129,28 @@
         class="accordion-item"
         *ngFor="let pregunta of preguntasFiltradas; let i = index"
         [class.expanded]="preguntaExpandida === i"
+        [class.dragging]="draggedIndex === i"
+        [class.drag-mode]="modoReorden"
+        [draggable]="modoReorden"
+        (dragstart)="onDragStart($event, i)"
+        (dragend)="onDragEnd($event)"
+        (dragover)="onDragOver($event, i)"
+        (drop)="onDrop($event, i)"
       >
-        <button class="accordion-header" (click)="togglePregunta(i)">
+        <button class="accordion-header" (click)="!modoReorden && togglePregunta(i)">
+          <!-- Icono de drag handle cuando está en modo reorden -->
+          <div class="drag-handle" *ngIf="modoReorden">⋮⋮</div>
           <div class="question-number">{{ i + 1 }}</div>
           <div class="question-text">
             <strong>{{ pregunta.Pregunta }}</strong>
             <span class="app-badge" *ngIf="pregunta.Submodulo">{{ pregunta.Submodulo }}</span>
           </div>
-          <div class="accordion-icon">
+          <div class="accordion-icon" *ngIf="!modoReorden">
             {{ preguntaExpandida === i ? '−' : '+' }}
           </div>
         </button>
 
-        <div class="accordion-body" *ngIf="preguntaExpandida === i">
+        <div class="accordion-body" *ngIf="preguntaExpandida === i && !modoReorden">
           <div class="answer-content">
             <div class="answer-icon">💡</div>
             <p [innerHTML]="sanitizar(pregunta.Respuesta)"></p>

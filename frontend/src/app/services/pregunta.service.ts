@@ -4,7 +4,9 @@ import { Observable } from 'rxjs';
 
 export interface Pregunta {
   id?: number;
+  ID?: number; // Backend usa ID en mayúsculas
   Idmodulo?: number;
+  orden?: number;
   Aplicativo?: string | null;
   Pregunta: string;
   Respuesta: string;
@@ -70,5 +72,10 @@ export class PreguntaService {
   // Limpiar números del inicio de las preguntas
   limpiarNumeros(dryRun: boolean = true): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/limpiar-numeros`, { dry_run: dryRun });
+  }
+
+  // Reordenar preguntas (drag and drop)
+  reordenarPreguntas(preguntas: Array<{id: number, orden: number}>): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/reordenar/batch`, { preguntas });
   }
 }

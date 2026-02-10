@@ -93,6 +93,14 @@ import { AuthService } from '../../services/auth.service';
             <button *ngIf="false" class="btn-clean-numbers" (click)="previsualizarLimpiezaNumeros()" title="Eliminar números del inicio de las preguntas">
               <span>🔢</span> Limpiar Números
             </button>
+            <button 
+              *ngIf="preguntasFiltradas.length > 0" 
+              class="btn-reorder" 
+              [class.active]="modoReorden"
+              (click)="toggleModoReorden()"
+              title="Reordenar preguntas">
+              {{ modoReorden ? '✓ Guardar Orden' : '↕️ Reordenar' }}
+            </button>
             <button class="btn-add-question" (click)="abrirAgregar()">
               <span>➕</span> Agregar Nueva Pregunta
             </button>
@@ -109,9 +117,19 @@ import { AuthService } from '../../services/auth.service';
         </div>
 
         <div *ngIf="preguntasFiltradas.length > 0" class="preguntas-lista">
-          <div *ngFor="let pregunta of preguntasFiltradas; let i = index" class="pregunta-item">
+          <div 
+            *ngFor="let pregunta of preguntasFiltradas; let i = index" 
+            class="pregunta-item"
+            [class.dragging]="draggedIndex === i"
+            [class.drag-mode]="modoReorden"
+            [draggable]="modoReorden"
+            (dragstart)="onDragStart($event, i)"
+            (dragend)="onDragEnd($event)"
+            (dragover)="onDragOver($event, i)"
+            (drop)="onDrop($event, i)">
             <div class="pregunta-content">
               <div class="pregunta-header">
+                <span class="drag-handle" *ngIf="modoReorden">⋮⋮</span>
                 <span class="numero">{{ i + 1 }}.</span>
                 <div class="pregunta-meta">
                   <span class="id-badge">ID: {{ pregunta.id || 'N/D' }}</span>
@@ -125,7 +143,7 @@ import { AuthService } from '../../services/auth.service';
                 <strong>R:</strong> <span [innerHTML]="sanitizar(pregunta.Respuesta)"></span>
               </div>
             </div>
-            <div class="pregunta-acciones">
+            <div class="pregunta-acciones" *ngIf="!modoReorden">
               <button class="btn-edit" (click)="editarPregunta(pregunta)" title="Editar pregunta">
                 ✏️ Editar
               </button>
@@ -311,7 +329,7 @@ import { AuthService } from '../../services/auth.service';
 
     /* SECCIÓN DE FILTROS */
     .filter-section {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: #39275c;
       padding: 30px;
       border-radius: 12px;
       margin-bottom: 40px;
@@ -1048,6 +1066,73 @@ import { AuthService } from '../../services/auth.service';
         }
       }
     }
+
+    /* ========== DRAG AND DROP ========== */
+    
+    .btn-reorder {
+      padding: 10px 20px;
+      background: linear-gradient(135deg, #65558F 0%, #5F448F 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(101, 85, 143, 0.3);
+      }
+
+      &.active {
+        background: linear-gradient(135deg, #28a745 0%, #218838 100%);
+      }
+    }
+
+    .pregunta-item.drag-mode {
+      cursor: move;
+      transition: all 0.2s ease;
+      border: 2px solid transparent;
+
+      &:hover {
+        transform: scale(1.02);
+        box-shadow: 0 6px 25px rgba(101, 85, 143, 0.2);
+        border-color: #65558F;
+      }
+    }
+
+    .pregunta-item.dragging {
+      opacity: 0.5;
+      transform: rotate(2deg);
+    }
+
+    .drag-handle {
+      font-size: 24px;
+      color: #65558F;
+      cursor: move;
+      margin-right: 10px;
+      user-select: none;
+    }
+
+    @keyframes dropAnimation {
+      0% {
+        transform: scale(1.05);
+      }
+      50% {
+        transform: scale(0.98);
+      }
+      100% {
+        transform: scale(1);
+      }
+    }
+
+    .pregunta-item {
+      animation: dropAnimation 0.3s ease;
+    }
   `]
 })
 export class AdminPreguntasComponent implements OnInit {
@@ -1088,6 +1173,11 @@ export class AdminPreguntasComponent implements OnInit {
   mostrarModalLimpieza = false;
   cargandoLimpieza = false;
   previsualizacionLimpieza: any = null;
+
+  // Drag and Drop
+  modoReorden = false;
+  draggedIndex: number | null = null;
+  ordenOriginal: Pregunta[] = [];
 
   @ViewChild('respuestaEditor')
   respuestaEditorRef?: ElementRef<HTMLElement>;
@@ -1373,53 +1463,68 @@ export class AdminPreguntasComponent implements OnInit {
     console.log('Filtros actuales:', this.filtros);
     console.log('Total de preguntas en BD:', this.preguntas.length);
     
-    // Si no hay filtros activos, mostrar todas
+    // Si no hay filtros activos, no mostrar nada
     if (!this.filtros.categoria && !this.filtros.modulo && 
         !this.filtros.submodulo && !this.filtros.subsubmodulo && !this.filtros.subsubsubmodulo) {
-      console.log('✓ Sin filtros activos, mostrando todas las preguntas');
-      this.preguntasFiltradas = [...this.preguntas];
+      console.log('✓ Sin filtros activos, no mostrar preguntas');
+      this.preguntasFiltradas = [];
       console.log(`✅ Resultados: ${this.preguntasFiltradas.length} preguntas encontradas`);
       return;
     }
 
-    // Determinar qué módulos queremos
-    let modulosBuscados: number[] = [];
+    // Determinar el módulo específico seleccionado (el más específico disponible)
+    let moduloIdBuscado: number | null = null;
     
+    // Buscar el filtro más específico que esté seleccionado
     if (this.filtros.subsubsubmodulo !== null) {
-      // Filtro más específico: sub-sub-submódulo
-      modulosBuscados = this.obtenerTodosLosSubmódulos(this.filtros.subsubsubmodulo);
-      console.log(`Filtrando por sub-sub-submódulo ${this.filtros.subsubsubmodulo}`);
+      moduloIdBuscado = Number(this.filtros.subsubsubmodulo);
+      console.log(`Filtrando por sub-sub-submódulo específico: ${moduloIdBuscado}`);
     } else if (this.filtros.subsubmodulo !== null) {
-      // Filtro: sub-submódulo
-      modulosBuscados = this.obtenerTodosLosSubmódulos(this.filtros.subsubmodulo);
-      console.log(`Filtrando por sub-submódulo ${this.filtros.subsubmodulo}`);
+      moduloIdBuscado = Number(this.filtros.subsubmodulo);
+      console.log(`Filtrando por sub-submódulo específico: ${moduloIdBuscado}`);
     } else if (this.filtros.submodulo !== null) {
-      // Filtro: submódulo
-      modulosBuscados = this.obtenerTodosLosSubmódulos(this.filtros.submodulo);
-      console.log(`Filtrando por submódulo ${this.filtros.submodulo}`);
+      moduloIdBuscado = Number(this.filtros.submodulo);
+      console.log(`Filtrando por submódulo específico: ${moduloIdBuscado}`);
     } else if (this.filtros.modulo !== null) {
-      // Filtro: módulo
-      modulosBuscados = this.obtenerTodosLosSubmódulos(this.filtros.modulo);
-      console.log(`Filtrando por módulo ${this.filtros.modulo}`);
+      moduloIdBuscado = Number(this.filtros.modulo);
+      console.log(`Filtrando por módulo específico: ${moduloIdBuscado}`);
     } else if (this.filtros.categoria !== null) {
-      // Filtro: categoría - obtener todos los módulos bajo esta categoría
-      modulosBuscados = this.obtenerTodosLosSubmódulos(this.filtros.categoria);
-      const cat = this.categorias.find(c => c.id === this.filtros.categoria);
-      console.log(`Filtrando por categoría ${this.filtros.categoria} (${cat?.nombre}), módulos buscados: [${modulosBuscados}]`);
+      moduloIdBuscado = Number(this.filtros.categoria);
+      console.log(`Filtrando por categoría específica: ${moduloIdBuscado}`);
     }
 
-    console.log(`Buscando preguntas con Idmodulo en [${modulosBuscados}]`);
+    if (moduloIdBuscado === null) {
+      console.log('No hay módulo específico seleccionado');
+      this.preguntasFiltradas = [];
+      return;
+    }
 
-    // Filtrar preguntas que coincidan con los módulos buscados
+    // Buscar SOLO preguntas que tengan exactamente ese Idmodulo (no hijos)
+    console.log(`Buscando preguntas con Idmodulo = ${moduloIdBuscado} (exacto, sin hijos)`);
+    
+    // Debug: Mostrar algunos Idmodulo de las preguntas
+    console.log('Primeras 5 preguntas con sus Idmodulo:', 
+      this.preguntas.slice(0, 5).map(p => ({ id: p.id, Idmodulo: p.Idmodulo, tipo: typeof p.Idmodulo }))
+    );
+
     this.preguntasFiltradas = this.preguntas.filter(p => {
-      const coincide = modulosBuscados.includes(p.Idmodulo || 0);
+      // Asegurar comparación numérica
+      const preguntaModuloId = Number(p.Idmodulo);
+      const coincide = preguntaModuloId === moduloIdBuscado;
       if (coincide) {
-        console.log(`  ✓ Pregunta ID ${p.id} (Idmodulo=${p.Idmodulo}) coincide`);
+        console.log(`  ✓ Pregunta ID ${p.id} (Idmodulo=${p.Idmodulo}) coincide exactamente con ${moduloIdBuscado}`);
       }
       return coincide;
     });
     
-    console.log(`✅ Resultados: ${this.preguntasFiltradas.length} preguntas encontradas`);
+    console.log(`✅ Resultados: ${this.preguntasFiltradas.length} preguntas encontradas para módulo ${moduloIdBuscado}`);
+    
+    // Mensaje informativo si no hay preguntas
+    if (this.preguntasFiltradas.length === 0) {
+      const moduloSeleccionado = this.modulosCompletos.find(m => Number(m.id) === moduloIdBuscado);
+      console.log(`ℹ️ El módulo "${moduloSeleccionado?.nombre}" (ID: ${moduloIdBuscado}) no tiene preguntas directamente asignadas`);
+      console.log('Módulos con preguntas:', [...new Set(this.preguntas.map(p => p.Idmodulo))]);
+    }
   }
 
   /**
@@ -1828,5 +1933,75 @@ export class AdminPreguntasComponent implements OnInit {
     // Solo módulos donde el usuario puede crear preguntas (sin ancestros)
     const allowed = new Set(this.allowedModuleIds.map(id => Number(id)));
     return modulos.filter(m => allowed.has(Number(m.id)));
+  }
+
+  // ========== DRAG AND DROP ==========
+  
+  toggleModoReorden() {
+    if (this.modoReorden) {
+      // Guardar el nuevo orden
+      this.guardarNuevoOrden();
+    } else {
+      // Activar modo reorden y guardar orden original
+      this.ordenOriginal = [...this.preguntasFiltradas];
+      this.modoReorden = true;
+    }
+  }
+
+  onDragStart(event: DragEvent, index: number) {
+    this.draggedIndex = index;
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/html', '');
+    }
+  }
+
+  onDragEnd(event: DragEvent) {
+    this.draggedIndex = null;
+  }
+
+  onDragOver(event: DragEvent, index: number) {
+    event.preventDefault();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'move';
+    }
+
+    if (this.draggedIndex !== null && this.draggedIndex !== index) {
+      // Reordenar visualmente
+      const draggedItem = this.preguntasFiltradas[this.draggedIndex];
+      this.preguntasFiltradas.splice(this.draggedIndex, 1);
+      this.preguntasFiltradas.splice(index, 0, draggedItem);
+      this.draggedIndex = index;
+    }
+  }
+
+  onDrop(event: DragEvent, index: number) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  guardarNuevoOrden() {
+    // Crear el array con el nuevo orden
+    const preguntasOrdenadas = this.preguntasFiltradas.map((pregunta, index) => ({
+      id: this.getPreguntaId(pregunta),
+      orden: index + 1
+    }));
+
+    this.preguntaService.reordenarPreguntas(preguntasOrdenadas).subscribe({
+      next: (response) => {
+        console.log('Orden guardado exitosamente:', response);
+        alert('✓ Orden guardado exitosamente');
+        this.modoReorden = false;
+        // Recargar las preguntas para obtener el nuevo orden del servidor
+        this.buscarPreguntas();
+      },
+      error: (error) => {
+        console.error('Error al guardar el orden:', error);
+        alert('Error al guardar el nuevo orden de las preguntas');
+        // Restaurar el orden original
+        this.preguntasFiltradas = [...this.ordenOriginal];
+        this.modoReorden = false;
+      }
+    });
   }
 }

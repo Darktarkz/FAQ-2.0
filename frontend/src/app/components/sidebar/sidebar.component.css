@@ -10,7 +10,7 @@
   top: 0;
   height: 100vh;
   width: 80px;
-  background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  background: #39275c;
   color: white;
   overflow-y: auto;
   transition: width 0.3s ease;

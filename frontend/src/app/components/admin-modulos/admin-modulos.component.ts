@@ -294,7 +294,7 @@ import { Router } from '@angular/router';
 
     /* SECCIÓN DE FILTROS */
     .filter-section {
-      background: linear-gradient(135deg, #65558F 0%, #5F448F 100%);
+      background: #39275c;
       padding: 30px;
       border-radius: 12px;
       margin-bottom: 40px;
@@ -1105,16 +1105,14 @@ export class AdminModulosComponent implements OnInit {
 
     let modulosBuscados: number[] = [];
     
-    if (this.filtros.subsubsubmodulo !== null) {
-      modulosBuscados = this.obtenerTodosLosSubmódulos(this.filtros.subsubsubmodulo);
-    } else if (this.filtros.subsubmodulo !== null) {
-      modulosBuscados = this.obtenerTodosLosSubmódulos(this.filtros.subsubmodulo);
-    } else if (this.filtros.submodulo !== null) {
-      modulosBuscados = this.obtenerTodosLosSubmódulos(this.filtros.submodulo);
-    } else if (this.filtros.modulo !== null) {
-      modulosBuscados = this.obtenerTodosLosSubmódulos(this.filtros.modulo);
-    } else if (this.filtros.categoria !== null) {
-      modulosBuscados = this.obtenerTodosLosSubmódulos(this.filtros.categoria);
+    // Obtener el ID del filtro más específico
+    const moduloIdBuscado = this.filtros.subsubsubmodulo ?? this.filtros.subsubmodulo ?? 
+                            this.filtros.submodulo ?? this.filtros.modulo ?? this.filtros.categoria;
+    
+    if (moduloIdBuscado !== null) {
+      // Obtener SOLO los hijos directos del módulo seleccionado (sin recursión, sin incluir el padre)
+      modulosBuscados = this.obtenerHijosDirectos(moduloIdBuscado);
+      console.log(`Buscando hijos directos del módulo ${moduloIdBuscado}:`, modulosBuscados);
     }
 
     this.modulosFiltrados = this.modulos.filter(m => modulosBuscados.includes(m.id!));
@@ -1142,6 +1140,26 @@ export class AdminModulosComponent implements OnInit {
 
     procesar(modId);
     return resultado;
+  }
+
+  /**
+   * Obtiene SOLO los hijos directos de un módulo (sin recursión, sin incluir el padre)
+   */
+  obtenerHijosDirectos(moduloId: number): number[] {
+    const modId = Number(moduloId);
+    
+    if (!this.modulosCompletos || this.modulosCompletos.length === 0) {
+      return [];
+    }
+
+    // Filtrar solo los módulos que tienen como padre directo al módulo especificado
+    const hijosDirectos = this.modulosCompletos.filter(m => {
+      const mIdpadre = m.idpadre ? Number(m.idpadre) : null;
+      return mIdpadre === modId;
+    });
+
+    // Retornar solo los IDs de los hijos directos
+    return hijosDirectos.map(hijo => Number(hijo.id));
   }
 
   limpiarFiltros() {
