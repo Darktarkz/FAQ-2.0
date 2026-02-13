@@ -20,13 +20,7 @@ class TicketController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'modulo_id' => 'required|exists:modulos,id',
-            'nombre_completo' => 'required|string|max:255',
-            'tipo_identificacion' => 'nullable|string|max:50',
-            'cedula' => 'nullable|string|max:50',
-            'correo' => 'required|email|max:255',
-            'telefono' => 'nullable|string|max:50',
-            'numero_contrato' => 'nullable|string|max:100',
-            'descripcion' => 'required|string',
+            'campos_personalizados' => 'required|json',
             'screenshot' => 'nullable|image|max:5120', // 5MB max
         ]);
 
@@ -49,17 +43,14 @@ class TicketController extends Controller
                 $screenshotPath = $file->storeAs('tickets/screenshots', $filename, 'public');
             }
 
+            // Decodificar campos personalizados
+            $camposPersonalizados = json_decode($request->campos_personalizados, true);
+
             // Crear ticket
             $ticket = Ticket::create([
                 'numero_ticket' => $numeroTicket,
                 'modulo_id' => $request->modulo_id,
-                'nombre_completo' => $request->nombre_completo,
-                'tipo_identificacion' => $request->tipo_identificacion,
-                'cedula' => $request->cedula,
-                'correo' => $request->correo,
-                'telefono' => $request->telefono,
-                'numero_contrato' => $request->numero_contrato,
-                'descripcion' => $request->descripcion,
+                'campos_personalizados' => $camposPersonalizados,
                 'screenshot_path' => $screenshotPath,
             ]);
 
@@ -118,14 +109,6 @@ class TicketController extends Controller
             $campos = [
                 'Número de Ticket' => $ticket->numero_ticket,
                 'Módulo' => $ticket->modulo->nombre,
-                'Nombre Completo' => $ticket->nombre_completo,
-                'Tipo Identificación' => $ticket->tipo_identificacion,
-                'Cédula' => $ticket->cedula,
-                'Correo' => $ticket->correo,
-                'Teléfono' => $ticket->telefono,
-                'Número de Contrato' => $ticket->numero_contrato,
-                'Descripción' => $ticket->descripcion,
-                'Fecha' => $ticket->created_at->format('d/m/Y H:i:s'),
             ];
 
             foreach ($campos as $nombre => $valor) {
@@ -133,6 +116,26 @@ class TicketController extends Controller
                     $mensaje .= "<b>" . htmlspecialchars($nombre) . ":</b> " . htmlspecialchars($valor) . "<br>";
                 }
             }
+
+            // Agregar campos personalizados si existen
+            if ($ticket->campos_personalizados && is_array($ticket->campos_personalizados)) {
+                $mensaje .= "<br><b style='color: #4285f4;'>Información del Ticket:</b><br>";
+                foreach ($ticket->campos_personalizados as $nombreCampo => $valor) {
+                    if (!empty($valor)) {
+                        // Formatear el nombre del campo (snake_case a Title Case)
+                        $nombreFormateado = ucwords(str_replace('_', ' ', $nombreCampo));
+                        
+                        // Si el valor es booleano, convertir a Sí/No
+                        if (is_bool($valor)) {
+                            $valor = $valor ? 'Sí' : 'No';
+                        }
+                        
+                        $mensaje .= "<b>" . htmlspecialchars($nombreFormateado) . ":</b> " . htmlspecialchars($valor) . "<br>";
+                    }
+                }
+            }
+
+            $mensaje .= "<br><b>Fecha:</b> " . $ticket->created_at->format('d/m/Y H:i:s');
 
             // Plantilla del mensaje
             $message = '

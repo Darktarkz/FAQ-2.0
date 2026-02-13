@@ -2,7 +2,7 @@ import { Component, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TicketService, Ticket } from '../../services/ticket.service';
-import { FormularioConfigService, FormularioConfig } from '../../services/formulario-config.service';
+import { FormularioCampoService, FormularioCampo } from '../../services/formulario-campo.service';
 
 @Component({
   selector: 'app-formulario-soporte',
@@ -15,30 +15,9 @@ export class FormularioSoporteComponent implements OnInit {
   @Input() moduloId!: number;
   @Input() moduloNombre!: string;
 
-  // Configuración de campos a mostrar
-  config: FormularioConfig = {
-    modulo_id: 0,
-    mostrar_tipo_identificacion: true,
-    mostrar_cedula: true,
-    mostrar_telefono: true,
-    mostrar_numero_contrato: false,
-    mostrar_screenshot: true
-  };
-
-  // Datos del formulario
-  ticket: Ticket = {
-    modulo_id: 0,
-    nombre_completo: '',
-    tipo_identificacion: 'CC',
-    cedula: '',
-    correo: '',
-    telefono: '',
-    numero_contrato: '',
-    descripcion: ''
-  };
-
-  selectedFile: File | null = null;
-  previewUrl: string | null = null;
+  // Campos personalizados del módulo
+  camposPersonalizados: FormularioCampo[] = [];
+  valoresCamposPersonalizados: { [key: string]: any } = {};
   
   enviando: boolean = false;
   cargandoFormulario: boolean = false;
@@ -46,38 +25,42 @@ export class FormularioSoporteComponent implements OnInit {
   mostrarError: boolean = false;
   mensajeError: string = '';
   numeroTicket: string = '';
-
-  tiposIdentificacion = [
-    { value: 'CC', label: 'Cédula de Ciudadanía' },
-    { value: 'CE', label: 'Cédula de Extranjería' },
-    { value: 'TI', label: 'Tarjeta de Identidad' },
-    { value: 'PA', label: 'Pasaporte' },
-    { value: 'NIT', label: 'NIT' }
-  ];
+  selectedFile: File | null = null;
+  previewUrl: string | null = null;
 
   constructor(
     private ticketService: TicketService,
-    private formularioConfigService: FormularioConfigService
+    private formularioCampoService: FormularioCampoService
   ) {}
 
   ngOnInit(): void {
-    this.ticket.modulo_id = this.moduloId;
-    this.cargarConfiguracion();
+    this.cargarCamposPersonalizados();
   }
 
-  cargarConfiguracion(): void {
+  cargarCamposPersonalizados(): void {
     this.cargandoFormulario = true;
     
-    this.formularioConfigService.getPorModulo(this.moduloId).subscribe({
+    this.formularioCampoService.getPorModulo(this.moduloId).subscribe({
       next: (response) => {
-        if (response.success && response.config) {
-          this.config = response.config;
+        if (response.success && response.campos) {
+          // Solo campos visibles
+          this.camposPersonalizados = response.campos.filter(campo => campo.visible);
+          
+          // Inicializar valores
+          this.camposPersonalizados.forEach(campo => {
+            if (campo.tipo === 'checkbox') {
+              this.valoresCamposPersonalizados[campo.nombre_campo] = false;
+            } else if (campo.tipo === 'radio' || campo.tipo === 'select') {
+              this.valoresCamposPersonalizados[campo.nombre_campo] = campo.opciones?.[0] || '';
+            } else {
+              this.valoresCamposPersonalizados[campo.nombre_campo] = '';
+            }
+          });
         }
         this.cargandoFormulario = false;
       },
       error: (err) => {
-        console.error('Error al cargar configuración:', err);
-        // Usar configuración por defecto
+        console.error('Error al cargar campos personalizados:', err);
         this.cargandoFormulario = false;
       }
     });
@@ -86,12 +69,6 @@ export class FormularioSoporteComponent implements OnInit {
   onFileSelected(event: any): void {
     const file = event.target.files[0];
     if (file) {
-      // Validar tipo de archivo
-      if (!file.type.startsWith('image/')) {
-        alert('Por favor selecciona un archivo de imagen válido');
-        return;
-      }
-
       // Validar tamaño (máx 5MB)
       if (file.size > 5 * 1024 * 1024) {
         alert('El archivo no debe exceder 5MB');
@@ -112,28 +89,56 @@ export class FormularioSoporteComponent implements OnInit {
   eliminarImagen(): void {
     this.selectedFile = null;
     this.previewUrl = null;
-    const fileInput = document.getElementById('screenshot') as HTMLInputElement;
-    if (fileInput) {
-      fileInput.value = '';
+  }
+
+  onCampoFileSelected(event: any, nombreCampo: string): void {
+    const file = event.target.files[0];
+    if (file) {
+      // Validar tamaño (máx 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('El archivo no debe exceder 5MB');
+        return;
+      }
+
+      this.valoresCamposPersonalizados[nombreCampo] = file;
     }
   }
 
   enviarTicket(): void {
-    // Validar campos requeridos
-    if (!this.ticket.nombre_completo || !this.ticket.correo || !this.ticket.descripcion) {
+    // Validar que haya al menos un campo configurado
+    if (this.camposPersonalizados.length === 0) {
       this.mostrarError = true;
-      this.mensajeError = 'Por favor completa todos los campos obligatorios';
+      this.mensajeError = 'Este módulo no tiene campos configurados. Contacta al administrador.';
       setTimeout(() => this.mostrarError = false, 5000);
       return;
     }
 
-    // Validar email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(this.ticket.correo)) {
-      this.mostrarError = true;
-      this.mensajeError = 'Por favor ingresa un correo electrónico válido';
-      setTimeout(() => this.mostrarError = false, 5000);
-      return;
+    // Validar campos personalizados requeridos
+    for (const campo of this.camposPersonalizados) {
+      if (campo.requerido) {
+        const valor = this.valoresCamposPersonalizados[campo.nombre_campo];
+        
+        // Validar que el campo tenga valor (diferente a vacío, null, undefined o false para no-checkbox)
+        if (valor === null || valor === undefined || 
+            (typeof valor === 'string' && valor.trim() === '') ||
+            (campo.tipo !== 'checkbox' && valor === false)) {
+          this.mostrarError = true;
+          this.mensajeError = `El campo "${campo.etiqueta}" es obligatorio`;
+          setTimeout(() => this.mostrarError = false, 5000);
+          return;
+        }
+
+        // Validar formato de email si el tipo es email
+        if (campo.tipo === 'email') {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(valor)) {
+            this.mostrarError = true;
+            this.mensajeError = `Por favor ingresa un correo electrónico válido en "${campo.etiqueta}"`;
+            setTimeout(() => this.mostrarError = false, 5000);
+            return;
+          }
+        }
+      }
     }
 
     this.enviando = true;
@@ -141,18 +146,27 @@ export class FormularioSoporteComponent implements OnInit {
 
     // Crear FormData
     const formData = new FormData();
-    formData.append('modulo_id', this.ticket.modulo_id.toString());
-    formData.append('nombre_completo', this.ticket.nombre_completo);
-    formData.append('tipo_identificacion', this.ticket.tipo_identificacion || '');
-    formData.append('cedula', this.ticket.cedula || '');
-    formData.append('correo', this.ticket.correo);
-    formData.append('telefono', this.ticket.telefono || '');
-    formData.append('numero_contrato', this.ticket.numero_contrato || '');
-    formData.append('descripcion', this.ticket.descripcion);
+    formData.append('modulo_id', this.moduloId.toString());
 
-    if (this.selectedFile) {
-      formData.append('screenshot', this.selectedFile);
+    // Preparar campos personalizados (separar archivos de otros datos)
+    const camposData: { [key: string]: any } = {};
+    let tieneArchivos = false;
+
+    for (const campo of this.camposPersonalizados) {
+      const valor = this.valoresCamposPersonalizados[campo.nombre_campo];
+      
+      if (campo.tipo === 'file' && valor instanceof File) {
+        // Agregar archivo al FormData
+        formData.append(`archivo_${campo.nombre_campo}`, valor);
+        camposData[campo.nombre_campo] = valor.name; // Guardar nombre del archivo
+        tieneArchivos = true;
+      } else {
+        camposData[campo.nombre_campo] = valor;
+      }
     }
+
+    // Agregar campos personalizados como JSON
+    formData.append('campos_personalizados', JSON.stringify(camposData));
 
     // Enviar ticket
     this.ticketService.crearTicket(formData).subscribe({
@@ -183,23 +197,16 @@ export class FormularioSoporteComponent implements OnInit {
   }
 
   resetearFormulario(): void {
-    this.ticket = {
-      modulo_id: this.moduloId,
-      nombre_completo: '',
-      tipo_identificacion: 'CC',
-      cedula: '',
-      correo: '',
-      telefono: '',
-      numero_contrato: '',
-      descripcion: ''
-    };
-    
-    this.selectedFile = null;
-    this.previewUrl = null;
-    const fileInput = document.getElementById('screenshot') as HTMLInputElement;
-    if (fileInput) {
-      fileInput.value = '';
-    }
+    // Resetear campos personalizados
+    this.camposPersonalizados.forEach(campo => {
+      if (campo.tipo === 'checkbox') {
+        this.valoresCamposPersonalizados[campo.nombre_campo] = false;
+      } else if (campo.tipo === 'radio' || campo.tipo === 'select') {
+        this.valoresCamposPersonalizados[campo.nombre_campo] = campo.opciones?.[0] || '';
+      } else {
+        this.valoresCamposPersonalizados[campo.nombre_campo] = '';
+      }
+    });
   }
 
   cerrarMensajeExito(): void {

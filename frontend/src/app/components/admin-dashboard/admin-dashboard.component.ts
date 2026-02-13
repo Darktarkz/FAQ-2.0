@@ -223,7 +223,7 @@ import { AuthService } from '../../services/auth.service';
 
     /* Welcome Section */
     .welcome-section {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: #383838;
       color: white;
       padding: 30px;
       border-radius: 12px;

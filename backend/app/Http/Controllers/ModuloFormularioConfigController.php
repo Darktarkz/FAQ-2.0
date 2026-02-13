@@ -6,6 +6,7 @@ use App\Models\ModuloFormularioConfig;
 use App\Models\Modulo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 
 class ModuloFormularioConfigController extends Controller
 {
@@ -31,11 +32,18 @@ class ModuloFormularioConfigController extends Controller
 
     /**
      * Listar todas las configuraciones con información del módulo
+     * Solo muestra módulos que tienen preguntas asociadas
      */
     public function index()
     {
         try {
-            $modulos = Modulo::all();
+            // Solo obtener módulos que tienen al menos una pregunta
+            $modulosConPreguntas = DB::table('preguntas')
+                ->select('Idmodulo')
+                ->distinct()
+                ->pluck('Idmodulo');
+            
+            $modulos = Modulo::whereIn('id', $modulosConPreguntas)->get();
             $configuraciones = [];
 
             foreach ($modulos as $modulo) {

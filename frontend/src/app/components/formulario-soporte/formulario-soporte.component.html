@@ -33,131 +33,153 @@
   </div>
 
   <form (ngSubmit)="enviarTicket()" class="form-soporte">
-    <!-- Información del usuario -->
-    <div class="seccion-formulario">
-      <h3>Información Personal</h3>
+    <!-- Campos Dinámicos Configurables -->
+    <div class="seccion-formulario" *ngIf="camposPersonalizados.length > 0">
+      <h3>📝 Información del Ticket</h3>
 
-      <div class="form-group">
-        <label for="nombre_completo"> Nombre Completo <span class="requerido">*</span> </label>
-        <input
-          type="text"
-          id="nombre_completo"
-          [(ngModel)]="ticket.nombre_completo"
-          name="nombre_completo"
-          placeholder="Ej: Juan Pérez García"
-          required
-        />
-      </div>
-
-      <div class="form-row">
-        <div class="form-group" *ngIf="config.mostrar_tipo_identificacion">
-          <label for="tipo_identificacion">Tipo de Identificación</label>
-          <select
-            id="tipo_identificacion"
-            [(ngModel)]="ticket.tipo_identificacion"
-            name="tipo_identificacion"
-          >
-            <option *ngFor="let tipo of tiposIdentificacion" [value]="tipo.value">
-              {{ tipo.label }}
-            </option>
-          </select>
-        </div>
-
-        <div class="form-group" *ngIf="config.mostrar_cedula">
-          <label for="cedula">Número de Identificación</label>
-          <input
-            type="text"
-            id="cedula"
-            [(ngModel)]="ticket.cedula"
-            name="cedula"
-            placeholder="Ej: 1234567890"
-          />
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label for="correo"> Correo Electrónico <span class="requerido">*</span> </label>
-          <input
-            type="email"
-            id="correo"
-            [(ngModel)]="ticket.correo"
-            name="correo"
-            placeholder="ejemplo@correo.com"
-            required
-          />
-        </div>
-
-        <div class="form-group" *ngIf="config.mostrar_telefono">
-          <label for="telefono">Teléfono</label>
-          <input
-            type="tel"
-            id="telefono"
-            [(ngModel)]="ticket.telefono"
-            name="telefono"
-            placeholder="Ej: 3001234567"
-          />
-        </div>
-      </div>
-
-      <div class="form-group" *ngIf="config.mostrar_numero_contrato">
-        <label for="numero_contrato">Número de Contrato</label>
-        <input
-          type="text"
-          id="numero_contrato"
-          [(ngModel)]="ticket.numero_contrato"
-          name="numero_contrato"
-          placeholder="Ej: CONT-2026-001"
-        />
-      </div>
-    </div>
-
-    <!-- Descripción del problema -->
-    <div class="seccion-formulario">
-      <h3>Descripción del Problema</h3>
-
-      <div class="form-group">
-        <label for="descripcion"> Describe el problema <span class="requerido">*</span> </label>
-        <textarea
-          id="descripcion"
-          [(ngModel)]="ticket.descripcion"
-          name="descripcion"
-          rows="6"
-          placeholder="Describe detalladamente el problema que estás experimentando..."
-          required
-        ></textarea>
-        <small class="help-text">Incluye pasos para reproducir el error si es posible</small>
-      </div>
-    </div>
-
-    <!-- Captura de pantalla -->
-    <div class="seccion-formulario" *ngIf="config.mostrar_screenshot">
-      <h3>Captura de Pantalla (Opcional)</h3>
-
-      <div class="form-group">
-        <label for="screenshot" class="label-archivo">
-          <span class="icono-upload">📎</span>
-          {{ selectedFile ? 'Cambiar archivo' : 'Seleccionar captura de pantalla' }}
+      <div *ngFor="let campo of camposPersonalizados" class="form-group">
+        <!-- Label -->
+        <label [for]="campo.nombre_campo">
+          {{ campo.etiqueta }}
+          <span class="requerido" *ngIf="campo.requerido">*</span>
         </label>
+
+        <!-- Campo TEXT -->
         <input
-          type="file"
-          id="screenshot"
-          (change)="onFileSelected($event)"
-          accept="image/*"
-          style="display: none"
+          *ngIf="campo.tipo === 'text'"
+          type="text"
+          [id]="campo.nombre_campo"
+          [(ngModel)]="valoresCamposPersonalizados[campo.nombre_campo]"
+          [name]="campo.nombre_campo"
+          [placeholder]="campo.placeholder || ''"
+          [required]="campo.requerido"
         />
-        <small class="help-text">Formatos permitidos: JPG, PNG, GIF (Máx. 5MB)</small>
-      </div>
 
-      <!-- Preview de la imagen -->
-      <div *ngIf="previewUrl" class="preview-container">
-        <img [src]="previewUrl" alt="Preview" class="preview-image" />
-        <button type="button" class="btn-eliminar-imagen" (click)="eliminarImagen()">×</button>
-      </div>
+        <!-- Campo EMAIL -->
+        <input
+          *ngIf="campo.tipo === 'email'"
+          type="email"
+          [id]="campo.nombre_campo"
+          [(ngModel)]="valoresCamposPersonalizados[campo.nombre_campo]"
+          [name]="campo.nombre_campo"
+          [placeholder]="campo.placeholder || ''"
+          [required]="campo.requerido"
+        />
 
-      <p *ngIf="selectedFile" class="archivo-seleccionado">
-        <span class="icono-check">✓</span> {{ selectedFile.name }}
-      </p>
+        <!-- Campo TEL -->
+        <input
+          *ngIf="campo.tipo === 'tel'"
+          type="tel"
+          [id]="campo.nombre_campo"
+          [(ngModel)]="valoresCamposPersonalizados[campo.nombre_campo]"
+          [name]="campo.nombre_campo"
+          [placeholder]="campo.placeholder || ''"
+          [required]="campo.requerido"
+        />
+
+        <!-- Campo NUMBER -->
+        <input
+          *ngIf="campo.tipo === 'number'"
+          type="number"
+          [id]="campo.nombre_campo"
+          [(ngModel)]="valoresCamposPersonalizados[campo.nombre_campo]"
+          [name]="campo.nombre_campo"
+          [placeholder]="campo.placeholder || ''"
+          [required]="campo.requerido"
+        />
+
+        <!-- Campo DATE -->
+        <input
+          *ngIf="campo.tipo === 'date'"
+          type="date"
+          [id]="campo.nombre_campo"
+          [(ngModel)]="valoresCamposPersonalizados[campo.nombre_campo]"
+          [name]="campo.nombre_campo"
+          [required]="campo.requerido"
+        />
+
+        <!-- Campo TEXTAREA -->
+        <textarea
+          *ngIf="campo.tipo === 'textarea'"
+          [id]="campo.nombre_campo"
+          [(ngModel)]="valoresCamposPersonalizados[campo.nombre_campo]"
+          [name]="campo.nombre_campo"
+          [placeholder]="campo.placeholder || ''"
+          [required]="campo.requerido"
+          rows="4"
+        ></textarea>
+
+        <!-- Campo SELECT -->
+        <select
+          *ngIf="campo.tipo === 'select'"
+          [id]="campo.nombre_campo"
+          [(ngModel)]="valoresCamposPersonalizados[campo.nombre_campo]"
+          [name]="campo.nombre_campo"
+          [required]="campo.requerido"
+        >
+          <option value="" disabled>Selecciona una opción</option>
+          <option *ngFor="let opcion of campo.opciones" [value]="opcion">
+            {{ opcion }}
+          </option>
+        </select>
+
+        <!-- Campo RADIO -->
+        <div *ngIf="campo.tipo === 'radio'" class="radio-group">
+          <label *ngFor="let opcion of campo.opciones" class="radio-label">
+            <input
+              type="radio"
+              [name]="campo.nombre_campo"
+              [value]="opcion"
+              [(ngModel)]="valoresCamposPersonalizados[campo.nombre_campo]"
+              [required]="campo.requerido"
+            />
+            <span>{{ opcion }}</span>
+          </label>
+        </div>
+
+        <!-- Campo CHECKBOX -->
+        <div *ngIf="campo.tipo === 'checkbox'" class="checkbox-group">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              [name]="campo.nombre_campo"
+              [(ngModel)]="valoresCamposPersonalizados[campo.nombre_campo]"
+            />
+            <span>{{ campo.descripcion_ayuda || campo.etiqueta }}</span>
+          </label>
+        </div>
+
+        <!-- Campo FILE -->
+        <div *ngIf="campo.tipo === 'file'">
+          <label [for]="campo.nombre_campo + '_file'" class="label-archivo">
+            <span class="icono-upload">📎</span>
+            Seleccionar archivo
+          </label>
+          <input
+            type="file"
+            [id]="campo.nombre_campo + '_file'"
+            (change)="onCampoFileSelected($event, campo.nombre_campo)"
+            [required]="campo.requerido"
+            style="display: none"
+          />
+        </div>
+
+        <!-- Descripción de ayuda -->
+        <small class="help-text" *ngIf="campo.descripcion_ayuda && campo.tipo !== 'checkbox'">
+          {{ campo.descripcion_ayuda }}
+        </small>
+      </div>
+    </div>
+
+    <!-- Estado vacío si no hay campos configurados -->
+    <div
+      class="seccion-formulario"
+      *ngIf="!cargandoFormulario && camposPersonalizados.length === 0"
+    >
+      <div class="empty-state-form">
+        <p>⚠️ Este módulo no tiene campos de formulario configurados.</p>
+        <small>Por favor contacta al administrador del sistema.</small>
+      </div>
     </div>
 
     <!-- Botones de acción -->

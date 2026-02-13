@@ -11,7 +11,7 @@ import { BotonSoporteComponent } from '../boton-soporte/boton-soporte.component'
 @Component({
   selector: 'app-preguntas',
   standalone: true,
-  imports: [FormsModule, CommonModule, BotonSoporteComponent],
+  imports: [CommonModule, FormsModule, BotonSoporteComponent],
   templateUrl: './preguntas.component.html',
   styleUrl: './preguntas.component.css'
 })

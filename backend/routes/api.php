@@ -9,6 +9,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\FormularioTemplateController;
 use App\Http\Controllers\ModuloFormularioConfigController;
+use App\Http\Controllers\FormularioCampoController;
 
 /*
 |--------------------------------------------------------------------------
@@ -112,6 +113,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [ModuloFormularioConfigController::class, 'index']);           // GET /api/formulario-config (listar todos)
         Route::post('/', [ModuloFormularioConfigController::class, 'store']);          // POST /api/formulario-config (guardar/actualizar)
         Route::delete('/{moduloId}', [ModuloFormularioConfigController::class, 'reset']); // DELETE /api/formulario-config/{moduloId} (restablecer)
+    });
+
+    // Gestión de campos personalizados de formularios (solo admin)
+    Route::prefix('formulario-campos')->group(function () {
+        Route::get('/modulo/{moduloId}', [FormularioCampoController::class, 'getPorModulo']); // GET /api/formulario-campos/modulo/{moduloId} (obtener campos de un módulo)
+        Route::post('/', [FormularioCampoController::class, 'store']);                        // POST /api/formulario-campos (crear campo)
+        Route::put('/{id}', [FormularioCampoController::class, 'update']);                    // PUT /api/formulario-campos/{id} (actualizar campo)
+        Route::delete('/{id}', [FormularioCampoController::class, 'destroy']);                // DELETE /api/formulario-campos/{id} (eliminar campo)
+        Route::post('/reordenar', [FormularioCampoController::class, 'reordenar']);          // POST /api/formulario-campos/reordenar (reordenar campos)
     });
     Route::prefix('tickets')->group(function () {
         Route::get('/', [TicketController::class, 'index']);                // GET /api/tickets (listar todos)

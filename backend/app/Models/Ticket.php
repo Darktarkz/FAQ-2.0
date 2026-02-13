@@ -19,9 +19,14 @@ class Ticket extends Model
         'telefono',
         'numero_contrato',
         'descripcion',
+        'campos_personalizados',
         'screenshot_path',
         'estado',
         'prioridad',
+    ];
+
+    protected $casts = [
+        'campos_personalizados' => 'array',
     ];
 
     /**

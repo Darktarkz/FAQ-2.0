@@ -18,99 +18,148 @@
     <button (click)="exito = ''" class="btn-close">×</button>
   </div>
 
+  <!-- Buscador -->
+  <div class="search-container">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input
+        type="text"
+        [(ngModel)]="terminoBusqueda"
+        (ngModelChange)="filtrarModulos()"
+        placeholder="Busca un módulo para configurar su formulario..."
+        class="search-input"
+      />
+      <button
+        *ngIf="terminoBusqueda"
+        (click)="terminoBusqueda = ''; filtrarModulos()"
+        class="btn-clear-search"
+      >
+        ×
+      </button>
+    </div>
+  </div>
+
   <!-- Loading -->
   <div *ngIf="cargando" class="loading-state">
     <div class="spinner"></div>
     <p>Cargando configuraciones...</p>
   </div>
 
+  <!-- Estado vacío -->
+  <div *ngIf="!cargando && !terminoBusqueda" class="empty-search-state">
+    <div class="empty-icon">📝</div>
+    <h3>Busca un módulo para empezar</h3>
+    <p>Escribe el nombre del módulo que deseas configurar</p>
+  </div>
+
+  <!-- Sin resultados -->
+  <div
+    *ngIf="!cargando && terminoBusqueda && configuracionesFiltradas.length === 0"
+    class="no-results-state"
+  >
+    <div class="empty-icon">🔍</div>
+    <h3>No se encontraron resultados</h3>
+    <p>No hay módulos que coincidan con "{{ terminoBusqueda }}"</p>
+  </div>
+
   <!-- Lista de módulos -->
-  <div *ngIf="!cargando" class="modulos-grid">
-    <div *ngFor="let moduloConfig of configuraciones" class="modulo-card">
+  <div *ngIf="!cargando && configuracionesFiltradas.length > 0" class="modulos-grid">
+    <div *ngFor="let moduloConfig of configuracionesFiltradas" class="modulo-card">
       <div class="modulo-header">
-        <h3>{{ moduloConfig.modulo_nombre }}</h3>
-        <span class="modulo-id">ID: {{ moduloConfig.modulo_id }}</span>
+        <div class="modulo-title-wrapper">
+          <h3>{{ moduloConfig.modulo_nombre }}</h3>
+          <div class="modulo-badges">
+            <span
+              *ngFor="let nombreModulo of getRutaModulos(moduloConfig.modulo_id)"
+              class="modulo-badge"
+            >
+              {{ nombreModulo }}
+            </span>
+          </div>
+        </div>
+        <!--<span class="modulo-id">ID: {{ moduloConfig.modulo_id }}</span>-->
       </div>
 
-      <div class="config-campos">
+      <!-- Info y Campos Personalizados -->
+      <div class="info-campos-fijos">
         <p class="info-text">
-          <strong>Los campos siempre visibles son:</strong> Nombre Completo, Correo y Descripción
-          del Problema
+          <strong>📋 Formulario Completamente Personalizable</strong>
         </p>
-
-        <div class="campo-config">
-          <label class="campo-label">
-            <input
-              type="checkbox"
-              [(ngModel)]="moduloConfig.config.mostrar_tipo_identificacion"
-              class="campo-checkbox"
-            />
-            <span class="campo-nombre">Tipo de Identificación</span>
-          </label>
-        </div>
-
-        <div class="campo-config">
-          <label class="campo-label">
-            <input
-              type="checkbox"
-              [(ngModel)]="moduloConfig.config.mostrar_cedula"
-              class="campo-checkbox"
-            />
-            <span class="campo-nombre">Número de Identificación</span>
-          </label>
-        </div>
-
-        <div class="campo-config">
-          <label class="campo-label">
-            <input
-              type="checkbox"
-              [(ngModel)]="moduloConfig.config.mostrar_telefono"
-              class="campo-checkbox"
-            />
-            <span class="campo-nombre">Teléfono</span>
-          </label>
-        </div>
-
-        <div class="campo-config">
-          <label class="campo-label">
-            <input
-              type="checkbox"
-              [(ngModel)]="moduloConfig.config.mostrar_numero_contrato"
-              class="campo-checkbox"
-            />
-            <span class="campo-nombre">Número de Contrato</span>
-          </label>
-        </div>
-
-        <div class="campo-config">
-          <label class="campo-label">
-            <input
-              type="checkbox"
-              [(ngModel)]="moduloConfig.config.mostrar_screenshot"
-              class="campo-checkbox"
-            />
-            <span class="campo-nombre">Captura de Pantalla</span>
-          </label>
-        </div>
+        <p class="info-secondary">
+          Todos los campos del formulario de soporte deben agregarse manualmente. Se recomienda
+          incluir al menos: Nombre, Correo y Descripción del Problema.
+        </p>
       </div>
 
-      <div class="modulo-actions">
-        <button
-          class="btn btn-guardar"
-          (click)="guardarConfiguracion(moduloConfig)"
-          [disabled]="guardando === moduloConfig.modulo_id"
-        >
-          <span *ngIf="guardando === moduloConfig.modulo_id">⏳ Guardando...</span>
-          <span *ngIf="guardando !== moduloConfig.modulo_id">💾 Guardar</span>
-        </button>
+      <!-- Campos Personalizados -->
+      <div class="campos-personalizados-section">
+        <div class="section-header">
+          <h4>➕ Campos Personalizados</h4>
+          <button class="btn btn-add-campo" (click)="abrirModalAgregarCampo(moduloConfig)">
+            + Agregar Campo
+          </button>
+        </div>
 
-        <button
-          class="btn btn-restablecer"
-          (click)="restablecerConfiguracion(moduloConfig)"
-          [disabled]="guardando === moduloConfig.modulo_id"
+        <div
+          *ngIf="moduloConfig.camposPersonalizados && moduloConfig.camposPersonalizados.length > 0"
+          class="campos-lista"
         >
-          🔄 Restablecer
-        </button>
+          <div *ngFor="let campo of moduloConfig.camposPersonalizados" class="campo-personalizado">
+            <div class="campo-info">
+              <div class="campo-header-custom">
+                <strong>{{ campo.etiqueta }}</strong>
+                <span class="campo-tipo-badge">{{ getTipoLabel(campo.tipo) }}</span>
+                <span *ngIf="campo.requerido" class="campo-requerido-badge">Requerido</span>
+                <span
+                  *ngIf="!campo.visible"
+                  class="campo-oculto-badge"
+                  title="Campo oculto en el formulario"
+                >
+                  👁️‍🗨️ Oculto
+                </span>
+              </div>
+              <div class="campo-detalles">
+                <small *ngIf="campo.placeholder">Placeholder: {{ campo.placeholder }}</small>
+                <small *ngIf="campo.descripcion_ayuda">Ayuda: {{ campo.descripcion_ayuda }}</small>
+                <small *ngIf="campo.opciones && campo.opciones.length > 0">
+                  Opciones: {{ campo.opciones.join(', ') }}
+                </small>
+              </div>
+            </div>
+            <div class="campo-acciones">
+              <button
+                class="btn-icon btn-visibility-icon"
+                (click)="toggleVisibilidadCampo(moduloConfig, campo)"
+                [title]="campo.visible ? 'Ocultar campo' : 'Mostrar campo'"
+              >
+                {{ campo.visible ? '👁️' : '👁️‍🗨️' }}
+              </button>
+              <button
+                class="btn-icon btn-edit-icon"
+                (click)="abrirModalEditarCampo(moduloConfig, campo)"
+                title="Editar"
+              >
+                ✏️
+              </button>
+              <button
+                class="btn-icon btn-delete-icon"
+                (click)="eliminarCampo(moduloConfig, campo)"
+                title="Eliminar"
+              >
+                🗑️
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div
+          *ngIf="
+            !moduloConfig.camposPersonalizados || moduloConfig.camposPersonalizados.length === 0
+          "
+          class="campos-empty"
+        >
+          <p>No hay campos personalizados. Haz clic en "+ Agregar Campo" para crear uno.</p>
+        </div>
       </div>
     </div>
   </div>
@@ -120,5 +169,131 @@
     <div class="empty-icon">📦</div>
     <h3>No hay módulos configurados</h3>
     <p>Agrega módulos primero para poder configurar sus formularios</p>
+  </div>
+
+  <!-- Modal para Agregar/Editar Campo -->
+  <div *ngIf="mostrarModalCampo" class="modal-overlay" (click)="cerrarModalCampo()">
+    <div class="modal-content modal-campo" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ campoEditando ? 'Editar Campo' : 'Agregar Campo Personalizado' }}</h3>
+        <button class="btn-close" (click)="cerrarModalCampo()">×</button>
+      </div>
+
+      <div class="modal-body">
+        <form (ngSubmit)="guardarCampo()">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Nombre del Campo *</label>
+              <input
+                type="text"
+                [(ngModel)]="nuevoCampo.nombre_campo"
+                name="nombre_campo"
+                placeholder="nombre_sin_espacios"
+                required
+              />
+              <small>Nombre técnico (sin espacios ni caracteres especiales)</small>
+            </div>
+
+            <div class="form-group">
+              <label>Etiqueta Visible *</label>
+              <input
+                type="text"
+                [(ngModel)]="nuevoCampo.etiqueta"
+                name="etiqueta"
+                placeholder="Etiqueta que verá el usuario"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Tipo de Campo *</label>
+              <select [(ngModel)]="nuevoCampo.tipo" name="tipo" required>
+                <option *ngFor="let tipo of tiposCampo" [value]="tipo.valor">
+                  {{ tipo.label }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Tamaño de Columna (1-12)</label>
+              <input
+                type="number"
+                [(ngModel)]="nuevoCampo.tamano_columna"
+                name="tamano_columna"
+                min="1"
+                max="12"
+              />
+              <small>12 = ancho completo, 6 = mitad, etc.</small>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Placeholder</label>
+            <input
+              type="text"
+              [(ngModel)]="nuevoCampo.placeholder"
+              name="placeholder"
+              placeholder="Texto de ejemplo en el campo"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Descripción de Ayuda</label>
+            <textarea
+              [(ngModel)]="nuevoCampo.descripcion_ayuda"
+              name="descripcion_ayuda"
+              rows="2"
+              placeholder="Texto de ayuda que aparecerá debajo del campo"
+            ></textarea>
+          </div>
+
+          <!-- Opciones para select, radio, checkbox -->
+          <div *ngIf="requiereOpciones(nuevoCampo.tipo!)" class="form-group opciones-group">
+            <label>Opciones *</label>
+            <div
+              *ngFor="let opcion of nuevoCampo.opciones; let i = index; trackBy: trackByIndex"
+              class="opcion-item"
+            >
+              <input
+                type="text"
+                [(ngModel)]="nuevoCampo.opciones![i]"
+                [name]="'opcion_' + i"
+                placeholder="Opción {{ i + 1 }}"
+              />
+              <button type="button" class="btn-remove-opcion" (click)="eliminarOpcion(i)">×</button>
+            </div>
+            <button type="button" class="btn btn-add-opcion" (click)="agregarOpcion()">
+              + Agregar Opción
+            </button>
+          </div>
+
+          <div class="form-group checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" [(ngModel)]="nuevoCampo.requerido" name="requerido" />
+              <span>Campo requerido</span>
+            </label>
+          </div>
+
+          <div class="form-group checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" [(ngModel)]="nuevoCampo.visible" name="visible" />
+              <span>Campo visible</span>
+            </label>
+            <small>Desmarcar para ocultar el campo en el formulario</small>
+          </div>
+
+          <div class="modal-actions">
+            <button type="submit" class="btn btn-save-modal">
+              {{ campoEditando ? 'Actualizar Campo' : 'Agregar Campo' }}
+            </button>
+            <button type="button" class="btn btn-cancel-modal" (click)="cerrarModalCampo()">
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </div>

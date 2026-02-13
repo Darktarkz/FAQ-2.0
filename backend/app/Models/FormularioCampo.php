@@ -21,6 +21,7 @@ class FormularioCampo extends Model
         'validacion',
         'orden',
         'tamano_columna',
+        'visible',
     ];
 
     protected $casts = [
@@ -28,6 +29,7 @@ class FormularioCampo extends Model
         'opciones' => 'array',
         'orden' => 'integer',
         'tamano_columna' => 'integer',
+        'visible' => 'boolean',
     ];
 
     /**

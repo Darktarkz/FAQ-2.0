@@ -34,9 +34,29 @@ class FormularioTemplate extends Model
      */
     public static function porModulo($moduloId)
     {
-        return self::where('activo', true)
-            ->whereJsonContains('modulos_asignados', $moduloId)
+        // Convertir a entero para asegurar el tipo correcto
+        $moduloId = (int) $moduloId;
+        
+        // Buscar por JSON o por búsqueda manual si JSON falla
+        $template = self::where('activo', true)
+            ->where(function($query) use ($moduloId) {
+                $query->whereJsonContains('modulos_asignados', $moduloId)
+                      ->orWhereJsonContains('modulos_asignados', (string) $moduloId);
+            })
             ->with('campos')
             ->first();
+        
+        // Si no se encuentra, buscar manualmente en todos los templates
+        if (!$template) {
+            $templates = self::where('activo', true)->with('campos')->get();
+            foreach ($templates as $t) {
+                if (is_array($t->modulos_asignados) && in_array($moduloId, $t->modulos_asignados)) {
+                    $template = $t;
+                    break;
+                }
+            }
+        }
+        
+        return $template;
     }
 }

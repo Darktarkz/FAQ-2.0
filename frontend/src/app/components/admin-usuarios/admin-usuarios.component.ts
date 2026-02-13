@@ -13,7 +13,7 @@ interface ModuloJerarquico extends Modulo {
 @Component({
   selector: 'app-admin-usuarios',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule, CommonModule],
   template: `
     <div class="admin-usuarios">
       <div class="page-header">
@@ -83,7 +83,7 @@ interface ModuloJerarquico extends Modulo {
 
               <div class="modulos-list" *ngIf="modulosJerarquicos.length; else noModulos">
                 <label *ngFor="let modulo of modulosFiltrados" class="modulo-checkbox" [style.padding-left.px]="16 + (modulo.nivel || 0) * 20">
-                  <input type="checkbox" [value]="modulo.id" [checked]="modulo.id !== undefined && form.modulos?.includes(modulo.id)" (change)="modulo.id !== undefined && toggleModulo(modulo.id)"/>
+                  <input type="checkbox" [checked]="modulo.id !== undefined && isModuloSelected(modulo.id)" (change)="onModuloChange(modulo.id, $event)"/>
                   <span class="checkmark"></span>
                   <span class="modulo-nombre">
                     <span class="nivel-indicator" *ngIf="modulo.nivel && modulo.nivel > 0">└─</span>
@@ -211,7 +211,7 @@ interface ModuloJerarquico extends Modulo {
 
             <div class="modulos-list" *ngIf="modulosJerarquicos.length">
               <label *ngFor="let modulo of modulosEdicionFiltrados" class="modulo-checkbox" [style.padding-left.px]="16 + (modulo.nivel || 0) * 20">
-                <input type="checkbox" [value]="modulo.id" [checked]="modulo.id !== undefined && formEdicion.modulos?.includes(modulo.id)" (change)="modulo.id !== undefined && toggleModuloEdicion(modulo.id)"/>
+                <input type="checkbox" [checked]="modulo.id !== undefined && isModuloEdicionSelected(modulo.id)" (change)="onModuloEdicionChange(modulo.id, $event)"/>
                 <span class="checkmark"></span>
                 <span class="modulo-nombre">
                   <span class="nivel-indicator" *ngIf="modulo.nivel && modulo.nivel > 0">└─</span>
@@ -274,7 +274,9 @@ interface ModuloJerarquico extends Modulo {
     .modulo-checkbox { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 6px; cursor: pointer; transition: all 0.2s ease; border-bottom: 1px solid #f5f5f5; }
     .modulo-checkbox:last-child { border-bottom: none; }
     .modulo-checkbox:hover { background: #f9f8fa; }
-    .modulo-checkbox input[type="checkbox"] { display: none; }
+    .modulo-checkbox input[type="checkbox"] { position: absolute; opacity: 0; width: 22px; height: 22px; margin: 0; }
+    .modulo-checkbox input[type="checkbox"]:checked + .checkmark { background: #65558F; border-color: #65558F; }
+    .modulo-checkbox input[type="checkbox"]:checked + .checkmark::after { content: '✓'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 14px; font-weight: bold; }
     .modulo-nombre { flex: 1; font-size: 14px; color: #333; display: flex; align-items: center; gap: 6px; }
     .nivel-indicator { color: #999; font-size: 12px; }
     .modulo-badge { background: #65558F; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
@@ -457,24 +459,44 @@ export class AdminUsuariosComponent implements OnInit {
     }
   }
 
-  toggleModulo(id: number) {
-    const set = new Set(this.form.modulos || []);
-    if (set.has(id)) {
-      set.delete(id);
-    } else {
-      set.add(id);
-    }
-    this.form.modulos = Array.from(set);
+  isModuloSelected(id: number): boolean {
+    const moduloId = Number(id);
+    return (this.form.modulos || []).map(Number).includes(moduloId);
   }
 
-  toggleModuloEdicion(id: number) {
-    const set = new Set(this.formEdicion.modulos || []);
-    if (set.has(id)) {
-      set.delete(id);
+  isModuloEdicionSelected(id: number): boolean {
+    const moduloId = Number(id);
+    return (this.formEdicion.modulos || []).map(Number).includes(moduloId);
+  }
+
+  onModuloChange(id: number | undefined, event: Event) {
+    if (!id) return;
+    const moduloId = Number(id);
+    const checked = (event.target as HTMLInputElement).checked;
+    const currentModulos = new Set((this.form.modulos || []).map(Number));
+
+    if (checked) {
+      currentModulos.add(moduloId);
     } else {
-      set.add(id);
+      currentModulos.delete(moduloId);
     }
-    this.formEdicion.modulos = Array.from(set);
+
+    this.form.modulos = Array.from(currentModulos);
+  }
+
+  onModuloEdicionChange(id: number | undefined, event: Event) {
+    if (!id) return;
+    const moduloId = Number(id);
+    const checked = (event.target as HTMLInputElement).checked;
+    const currentModulos = new Set((this.formEdicion.modulos || []).map(Number));
+
+    if (checked) {
+      currentModulos.add(moduloId);
+    } else {
+      currentModulos.delete(moduloId);
+    }
+
+    this.formEdicion.modulos = Array.from(currentModulos);
   }
 
   guardar() {
@@ -506,7 +528,9 @@ export class AdminUsuariosComponent implements OnInit {
       email: u.email,
       password: '',
       is_admin: u.is_admin,
-      modulos: (u.modulos || []).map(m => m.id!).filter(id => id !== undefined)
+      modulos: (u.modulos || [])
+        .map(m => Number(m.id))
+        .filter(id => Number.isFinite(id))
     };
     this.busquedaModulosEdicion = '';
     this.filtrarModulosEdicion();

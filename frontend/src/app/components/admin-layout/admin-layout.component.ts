@@ -6,7 +6,7 @@ import { AuthService } from '../../services/auth.service';
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
-  imports: [RouterModule, CommonModule],
+  imports: [CommonModule, RouterModule],
   template: `
     <div class="admin-container" [class.no-sidebar]="!isPrivileged">
       <aside class="admin-sidebar" *ngIf="isPrivileged">
@@ -28,6 +28,9 @@ import { AuthService } from '../../services/auth.service';
           </a>
           <a routerLink="/admin/preguntas" routerLinkActive="active">
             <span class="icon">❓</span> Preguntas
+          </a>
+          <a routerLink="/admin/config-formularios" routerLinkActive="active">
+            <span class="icon">⚙️</span> Configuración de Formularios
           </a>
         </nav>
         <div class="sidebar-footer">

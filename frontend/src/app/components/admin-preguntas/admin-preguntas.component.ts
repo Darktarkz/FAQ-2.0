@@ -132,8 +132,9 @@ import { AuthService } from '../../services/auth.service';
                 <span class="drag-handle" *ngIf="modoReorden">⋮⋮</span>
                 <span class="numero">{{ i + 1 }}.</span>
                 <div class="pregunta-meta">
-                  <span class="id-badge">ID: {{ pregunta.id || 'N/D' }}</span>
-                  <span *ngIf="pregunta.Aplicativo" class="app-badge">{{ pregunta.Aplicativo }}</span>
+                  <!--<span class="id-badge">ID: {{ pregunta.id || 'N/D' }}</span> -->
+                  <span *ngFor="let modulo of getRutaModulos(pregunta?.Idmodulo)" class="app-badge">{{ modulo }}</span> 
+                  <!--<span *ngIf="pregunta.Aplicativo" class="app-badge aplicativo-badge">{{ pregunta.Aplicativo }}</span>-->
                 </div>
               </div>
               <div class="pregunta-text">
@@ -630,12 +631,17 @@ import { AuthService } from '../../services/auth.service';
         }
 
         .app-badge {
-          background-color: #e8f5e9;
-          color: #2e7d32;
+          background-color: #35558f;
+          color: white;
           padding: 4px 12px;
           border-radius: 4px;
           font-size: 11px;
           font-weight: 600;
+        }
+
+        .aplicativo-badge {
+          background-color: #e8f5e9;
+          color: #2e7d32;
         }
       }
     }
@@ -1933,6 +1939,39 @@ export class AdminPreguntasComponent implements OnInit {
     // Solo módulos donde el usuario puede crear preguntas (sin ancestros)
     const allowed = new Set(this.allowedModuleIds.map(id => Number(id)));
     return modulos.filter(m => allowed.has(Number(m.id)));
+  }
+
+  /**
+   * Obtiene la ruta completa de módulos desde la categoría raíz hasta el módulo de la pregunta
+   * Retorna un array de nombres de módulos en orden jerárquico
+   * Ejemplo: ['ESTRATEGICOS', 'PACO'] o ['MISIONALES', 'SIF', 'CREA', 'ARTISTA FORMADOR']
+   */
+  getRutaModulos(idModulo?: number | null): string[] {
+    if (!idModulo || !this.modulosCompletos?.length) {
+      return [];
+    }
+
+    // Crear mapa para búsqueda rápida
+    const byId = new Map<number, Modulo>();
+    this.modulosCompletos.forEach(m => byId.set(Number(m.id), m));
+
+    // Construir la ruta desde el módulo actual hasta la raíz
+    const ruta: string[] = [];
+    let actual = byId.get(Number(idModulo));
+
+    while (actual) {
+      ruta.unshift(actual.nombre); // Agregar al inicio para mantener orden correcto
+      
+      // Si no tiene padre, ya llegamos a la raíz (categoría)
+      if (!actual.idpadre) {
+        break;
+      }
+      
+      // Subir al padre
+      actual = byId.get(Number(actual.idpadre));
+    }
+
+    return ruta;
   }
 
   // ========== DRAG AND DROP ==========

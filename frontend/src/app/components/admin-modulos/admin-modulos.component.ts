@@ -112,9 +112,9 @@ import { Router } from '@angular/router';
               <div class="modulo-header">
                 <span class="numero">{{ i + 1 }}.</span>
                 <div class="modulo-meta">
-                  <span class="id-badge">ID: {{ modulo.id }}</span>
+                  <!-- <span class="id-badge">ID: {{ modulo.id }}</span> -->
                   <span class="jerarquia-badge" *ngIf="modulo.idpadre">
-                    Hijo de: {{ getNombrePadre(modulo.idpadre) }}
+                    Modulo de: {{ getNombrePadre(modulo.idpadre) }}
                   </span>
                 </div>
               </div>
