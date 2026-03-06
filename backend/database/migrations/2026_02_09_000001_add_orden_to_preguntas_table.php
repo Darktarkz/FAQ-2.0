@@ -11,10 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('preguntas', function (Blueprint $table) {
-            $table->integer('orden')->default(0)->after('Idmodulo');
-            $table->index('orden');
-        });
+        if (!Schema::hasColumn('preguntas', 'orden')) {
+            Schema::table('preguntas', function (Blueprint $table) {
+                $table->integer('orden')->default(0)->after('Idmodulo');
+                $table->index('orden');
+            });
+        }
     }
 
     /**

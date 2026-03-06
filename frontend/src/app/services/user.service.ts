@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { User, UserModule } from './auth.service';
+import { environment } from '../../environments/environment';
 
 export interface CreateUserDto {
   name: string;
@@ -21,7 +22,7 @@ export interface UpdateUserDto {
 
 @Injectable({ providedIn: 'root' })
 export class UserService {
-  private apiUrl = 'http://localhost:8000/api/users';
+  private apiUrl = `${environment.apiUrl}/users`;
 
   constructor(private http: HttpClient) {}
 

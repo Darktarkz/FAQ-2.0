@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface FormularioConfig {
   modulo_id: number;
@@ -22,7 +23,7 @@ interface ApiResponse {
   providedIn: 'root'
 })
 export class FormularioConfigService {
-  private apiUrl = 'http://127.0.0.1:8000/api/formulario-config';
+  private apiUrl = `${environment.apiUrl}/formulario-config`;
 
   constructor(private http: HttpClient) {}
 

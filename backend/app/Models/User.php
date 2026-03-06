@@ -63,7 +63,7 @@ class User extends Authenticatable
     public function modulos()
     {
         return $this->belongsToMany(Modulo::class, 'modulo_user', 'user_id', 'modulo_id')
-                    ->select(['modulos.id', 'modulos.modulo', 'modulos.descripción', 'modulos.id_padre', 'modulos.icono']);
+                    ->select(['modulos.id', 'modulos.nombre', 'modulos.descripcion', 'modulos.idpadre', 'modulos.icono']);
     }
 
     /**

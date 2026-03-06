@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('modulo_formulario_config', function (Blueprint $table) {
             $table->id();
-            $table->integer('modulo_id')->unique();
+            $table->unsignedBigInteger('modulo_id')->unique();
             
             // Campos opcionales que se pueden mostrar/ocultar
             $table->boolean('mostrar_tipo_identificacion')->default(true);

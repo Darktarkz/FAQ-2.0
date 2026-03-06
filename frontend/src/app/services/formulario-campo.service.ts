@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface FormularioCampo {
   id?: number;
@@ -31,7 +32,7 @@ interface ApiResponse {
   providedIn: 'root'
 })
 export class FormularioCampoService {
-  private apiUrl = 'http://127.0.0.1:8000/api/formulario-campos';
+  private apiUrl = `${environment.apiUrl}/formulario-campos`;
 
   constructor(private http: HttpClient) {}
 

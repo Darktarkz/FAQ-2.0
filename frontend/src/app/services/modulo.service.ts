@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface Modulo {
   id?: number;
@@ -15,7 +16,7 @@ export interface Modulo {
   providedIn: 'root'
 })
 export class ModuloService {
-  private apiUrl = 'http://localhost:8000/api/modulos';
+  private apiUrl = `${environment.apiUrl}/modulos`;
 
   constructor(private http: HttpClient) {}
 
@@ -31,7 +32,7 @@ export class ModuloService {
 
   // Obtener módulos por categoría
   getModulosPorCategoria(categoriaId: number): Observable<Modulo[]> {
-    return this.http.get<Modulo[]>(`http://localhost:8000/api/categorias/${categoriaId}/modulos`);
+    return this.http.get<Modulo[]>(`${environment.apiUrl}/categorias/${categoriaId}/modulos`);
   }
 
   // Crear módulo

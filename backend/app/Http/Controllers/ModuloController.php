@@ -136,7 +136,7 @@ class ModuloController extends Controller
         }
 
         // Bloquear eliminación si tiene hijos o preguntas asociadas
-        $tieneHijos = DB::table('modulos')->where('id_padre', $id)->exists();
+        $tieneHijos = DB::table('modulos')->where('idpadre', $id)->exists();
         if ($tieneHijos) {
             return response()->json([
                 'message' => 'No se puede eliminar el módulo porque tiene submódulos asociados'
