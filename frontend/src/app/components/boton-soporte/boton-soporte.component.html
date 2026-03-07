@@ -2,9 +2,12 @@
   class="boton-soporte"
   [class.boton-soporte-fixed]="posicion === 'fixed'"
   [class.boton-soporte-static]="posicion === 'static'"
+  [class.boton-soporte-disabled]="isDisabled"
+  [disabled]="isDisabled"
   (click)="abrirFormularioSoporte()"
   title="¿Necesitas ayuda? Reporta un problema"
 >
   <span class="icono-soporte">🆘</span>
   <span class="texto-soporte">¿Necesitas ayuda?</span>
+  <span class="timer-badge" *ngIf="timerVisible" aria-live="polite">{{ countdown }}</span>
 </button>

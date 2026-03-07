@@ -7,6 +7,7 @@ import { CategoriaService, Modulo } from '../../services/categoria.service';
 import { AuthService } from '../../services/auth.service';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { BotonSoporteComponent } from '../boton-soporte/boton-soporte.component';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-preguntas',
@@ -164,7 +165,7 @@ export class PreguntasComponent implements OnInit {
   }
 
   getIconUrl(icono: string): string {
-    return `http://localhost:8000/storage/${icono}`;
+    return `${environment.storageUrl}/${icono}`;
   }
 
   logout() {

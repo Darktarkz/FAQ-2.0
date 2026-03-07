@@ -42,8 +42,8 @@ export class CategoriaService {
     // Mapeo de aliases de campos
     const aliasMap: { [key: string]: string[] } = {
       'id': ['id', 'idMODULOS', 'id_modulo', 'moduloId', 'idModulo'],
-      'nombre': ['nombre', 'name', 'MODULOS'],
-      'descripcion': ['descripcion', 'description', 'desc', 'DESCRIPCION'],
+      'nombre': ['nombre', 'name', 'modulo', 'MODULOS'],
+      'descripcion': ['descripcion', 'description', 'desc', 'descripción', 'DESCRIPCION'],
       'idpadre': ['idpadre', 'id_padre', 'padre_id', 'padreId', 'parent_id', 'IDPADRE'],
       'icono': ['icono', 'icon', 'ICONO']
     };

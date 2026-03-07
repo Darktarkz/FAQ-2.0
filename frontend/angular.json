@@ -34,6 +34,7 @@
           },
           "configurations": {
             "production": {
+              "baseHref": "/FAQ2.0/",
               "budgets": [
                 {
                   "type": "initial",

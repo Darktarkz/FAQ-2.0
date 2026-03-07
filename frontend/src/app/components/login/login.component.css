@@ -95,3 +95,57 @@ button:disabled {
 .demo-info p {
   margin: 5px 0;
 }
+
+/* ===== RESPONSIVE: TABLET (≤768px) ===== */
+@media (max-width: 768px) {
+  .login-box {
+    padding: 30px 25px;
+    max-width: 420px;
+  }
+
+  h1 {
+    font-size: 24px;
+    margin-bottom: 24px;
+  }
+}
+
+/* ===== RESPONSIVE: MÓVIL (≤480px) ===== */
+@media (max-width: 480px) {
+  .login-container {
+    padding: 20px 15px;
+    align-items: flex-start;
+    padding-top: 40px;
+  }
+
+  .login-box {
+    padding: 28px 20px;
+    border-radius: 10px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+    width: 100%;
+  }
+
+  h1 {
+    font-size: 22px;
+    margin-bottom: 20px;
+  }
+
+  input {
+    font-size: 16px;
+    /* evita zoom automático en iOS */
+    padding: 14px 12px;
+  }
+
+  button {
+    font-size: 16px;
+    padding: 14px;
+  }
+
+  .error-message {
+    font-size: 13px;
+    padding: 10px 12px;
+  }
+
+  .demo-info {
+    font-size: 11px;
+  }
+}

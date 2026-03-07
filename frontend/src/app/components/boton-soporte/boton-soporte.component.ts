@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 
@@ -9,15 +9,47 @@ import { Router } from '@angular/router';
   templateUrl: './boton-soporte.component.html',
   styleUrls: ['./boton-soporte.component.css']
 })
-export class BotonSoporteComponent {
+export class BotonSoporteComponent implements OnInit, OnDestroy {
   @Input() moduloId!: number;
   @Input() moduloNombre!: string;
-  @Input() posicion: 'fixed' | 'static' = 'fixed'; // fixed para flotante, static para integrado
+  @Input() posicion: 'fixed' | 'static' = 'fixed';
+
+  countdown = 30;
+  timerVisible = false;
+  isDisabled = false;
+
+  private intervalId: ReturnType<typeof setInterval> | null = null;
 
   constructor(private router: Router) {}
 
+  ngOnInit(): void {
+    if (this.posicion === 'static') {
+      this.isDisabled = true;
+      this.timerVisible = true;
+      this.intervalId = setInterval(() => {
+        this.countdown--;
+        if (this.countdown <= 0) {
+          this.clearTimer();
+          this.isDisabled = false;
+          this.timerVisible = false;
+        }
+      }, 1000);
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.clearTimer();
+  }
+
+  private clearTimer(): void {
+    if (this.intervalId !== null) {
+      clearInterval(this.intervalId);
+      this.intervalId = null;
+    }
+  }
+
   abrirFormularioSoporte(): void {
-    // Navegar al formulario de soporte con los parámetros del módulo
+    if (this.isDisabled) return;
     this.router.navigate(['/soporte'], {
       queryParams: {
         modulo_id: this.moduloId,

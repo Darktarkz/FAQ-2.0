@@ -1,6 +1,7 @@
 .boton-soporte {
     display: flex;
     align-items: center;
+    justify-self: center;
     gap: 10px;
     padding: 12px 24px;
     background: linear-gradient(135deg, #6a1b9a 0%, #8e24aa 100%);
@@ -15,13 +16,44 @@
     z-index: 1000;
 }
 
-.boton-soporte:hover {
+/* Estado deshabilitado durante el temporizador */
+.boton-soporte-disabled {
+    background: linear-gradient(135deg, #9e9e9e 0%, #757575 100%) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+    animation: none !important;
+}
+
+.boton-soporte-disabled .icono-soporte {
+    animation: none !important;
+}
+
+/* Badge del temporizador */
+.timer-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.25);
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    border-radius: 50%;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1;
+    flex-shrink: 0;
+    letter-spacing: 0;
+    transition: opacity 0.4s ease;
+}
+
+.boton-soporte:hover:not(.boton-soporte-disabled) {
     background: linear-gradient(135deg, #7b1fa2 0%, #9c27b0 100%);
     transform: translateY(-2px);
     box-shadow: 0 6px 16px rgba(106, 27, 154, 0.4);
 }
 
-.boton-soporte:active {
+.boton-soporte:active:not(.boton-soporte-disabled) {
     transform: translateY(0);
 }
 

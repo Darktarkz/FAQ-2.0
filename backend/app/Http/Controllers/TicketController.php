@@ -79,26 +79,31 @@ class TicketController extends Controller
      */
     private function enviarCorreoSoporte(Ticket $ticket, $screenshotFile = null)
     {
-        $config = require base_path('../mail.php');
-        
         $mail = new PHPMailer(true);
 
         try {
-            // Configuración del servidor
+            // Configuración del servidor desde .env
             $mail->isSMTP();
-            $mail->Host = $config['smtp_host'];
+            $mail->Host = env('MAIL_HOST', 'smtp.gmail.com');
             $mail->SMTPAuth = true;
-            $mail->Username = $config['smtp_user'];
-            $mail->Password = $config['smtp_pass'];
+            $mail->Username = env('MAIL_USERNAME');
+            $mail->Password = env('MAIL_PASSWORD');
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port = $config['smtp_port'];
+            $mail->Port = (int) env('MAIL_PORT', 587);
             $mail->CharSet = 'UTF-8';
 
             // Remitente y destinatario
-            $mail->setFrom($config['from_email'], $config['from_name']);
-            $mail->addAddress('jineth.moreno@idartes.gov.co');
-            $mail->addCC('soporte.ti@idartes.gov.co');
-            $mail->addReplyTo($ticket->correo, $ticket->nombre_completo);
+            $mail->setFrom(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME', 'Sistema de Tickets IDARTES'));
+            $mail->addAddress(env('MAIL_SOPORTE_TO', 'jineth.moreno@idartes.gov.co'));
+            $mail->addCC(env('MAIL_SOPORTE_CC', 'soporte.ti@idartes.gov.co'));
+
+            // Extraer correo y nombre desde campos_personalizados
+            $campos = $ticket->campos_personalizados ?? [];
+            $correoRemitente = $campos['correo'] ?? $campos['email'] ?? $campos['correo_electronico'] ?? null;
+            $nombreRemitente = $campos['nombre_completo'] ?? $campos['nombre'] ?? $campos['nombre_colaborador'] ?? $correoRemitente;
+            if ($correoRemitente) {
+                $mail->addReplyTo($correoRemitente, $nombreRemitente);
+            }
 
             // Contenido
             $mail->isHTML(true);

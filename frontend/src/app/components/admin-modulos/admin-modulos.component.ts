@@ -5,6 +5,7 @@ import { ModuloService, Modulo } from '../../services/modulo.service';
 import { CategoriaService } from '../../services/categoria.service';
 import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-admin-modulos',
@@ -1260,7 +1261,7 @@ export class AdminModulosComponent implements OnInit {
     
     // Si tiene icono, mostrar preview
     if (modulo.icono) {
-      this.previewUrl = `http://localhost:8000/storage/${modulo.icono}`;
+      this.previewUrl = `${environment.storageUrl}/${modulo.icono}`;
     }
     
     // Determinar la jerarquía del padre

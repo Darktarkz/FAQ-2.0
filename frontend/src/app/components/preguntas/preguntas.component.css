@@ -8,8 +8,9 @@
 
 /* Header */
 .faq-header {
-  max-width: 1200px;
-  margin: 0 auto 40px;
+  max-width: 1800px;
+  max-height: 120px;
+  margin: 0 auto 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -40,19 +41,19 @@
 }
 
 .logo-idartes {
-  width: 120px;
+  width: 200px;
   height: auto;
-  max-width: 200px;
-  justify-self: center;
+  max-width: 400px;
+
   filter: brightness(0) saturate(100%);
 }
 
 .logo-comunicarte {
-  width: 200px;
+  width: 3000px;
   height: auto;
-  max-width: 200px;
+  max-width: 300px;
   grid-area: 1 / 3 / 2 / 4;
-  justify-self: center;
+  justify-self: right;
   filter: brightness(0) saturate(100%);
 }
 
@@ -244,6 +245,7 @@
   justify-content: center;
   gap: 20px;
   transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
   z-index: 1;
 }
 
@@ -364,6 +366,7 @@
   justify-content: center;
   gap: 15px;
   transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
   z-index: 1;
 }
 
@@ -668,6 +671,42 @@
 }
 
 /* Responsive Design */
+@media (max-width: 1024px) {
+  .faq-header {
+    padding: 20px 25px;
+  }
+
+  .header-content h1 {
+    font-size: 28px;
+  }
+
+  .Logos-header {
+    height: 70px;
+  }
+
+  .logo-comunicarte {
+    width: 160px;
+  }
+
+  .categories-grid {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+  }
+
+  .modules-grid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+  }
+
+  .category-card {
+    min-height: 260px;
+  }
+
+  .module-card {
+    min-height: 210px;
+  }
+}
+
 @media (max-width: 768px) {
   .faq-header {
     flex-direction: column;
@@ -677,7 +716,7 @@
   }
 
   .header-content h1 {
-    font-size: 28px;
+    font-size: 26px;
   }
 
   .btn-logout {
@@ -706,21 +745,21 @@
   }
 
   .categories-grid {
-    grid-template-columns: 1fr;
-    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 18px;
   }
 
   .modules-grid {
-    grid-template-columns: 1fr;
-    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 18px;
   }
 
   .category-card {
-    min-height: 250px;
+    min-height: 230px;
   }
 
   .module-card {
-    min-height: 220px;
+    min-height: 200px;
   }
 
   .card__title {
@@ -750,6 +789,174 @@
 
   .answer-content {
     flex-direction: column;
+  }
+}
+
+/* ===== RESPONSIVE: MÓVIL PEQUEÑO (≤480px) ===== */
+@media (max-width: 480px) {
+  .faq-container {
+    padding: 10px;
+  }
+
+  .faq-header {
+    padding: 15px;
+    gap: 12px;
+    border-radius: 12px;
+  }
+
+  .header-content h1 {
+    font-size: 20px;
+  }
+
+  .subtitle {
+    font-size: 13px;
+  }
+
+  .Logos-header {
+    height: 55px;
+    gap: 5px;
+    padding: 0 10px;
+  }
+
+  .logo-idartes {
+    width: 80px;
+  }
+
+  .logo-comunicarte {
+    width: 110px;
+  }
+
+  .breadcrumb {
+    padding: 10px 12px;
+    gap: 10px;
+    border-radius: 10px;
+  }
+
+  .breadcrumb-item {
+    font-size: 12px;
+    padding: 6px 8px;
+  }
+
+  .breadcrumb-separator {
+    font-size: 14px;
+  }
+
+  .categories-grid,
+  .modules-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .category-card {
+    min-height: 170px;
+    padding: 20px 15px;
+    border-radius: 12px;
+  }
+
+  .module-card {
+    min-height: 140px;
+    padding: 18px 15px;
+    border-radius: 10px;
+  }
+
+  .card-icon .icon-image {
+    max-width: 90px;
+    max-height: 90px;
+  }
+
+  .card-icon .icon-emoji,
+  .module-icon .icon-emoji {
+    font-size: 48px;
+  }
+
+  .card-title-visible {
+    font-size: 15px;
+  }
+
+  .module-title-visible {
+    font-size: 14px;
+  }
+
+  .card__title,
+  .module__title {
+    font-size: 18px;
+  }
+
+  .card__description,
+  .module__description {
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .questions-section {
+    border-radius: 10px;
+  }
+
+  .questions-header {
+    padding: 18px 15px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .questions-header h2 {
+    font-size: 20px;
+    width: 100%;
+    margin: 0;
+  }
+
+  .questions-count {
+    font-size: 13px;
+  }
+
+  .btn-reorder {
+    width: 100%;
+    margin-left: 0;
+    text-align: center;
+  }
+
+  .questions-accordion {
+    padding: 0 12px 20px;
+  }
+
+  .accordion-header {
+    padding: 14px 0;
+    gap: 10px;
+  }
+
+  .question-number {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  .question-text strong {
+    font-size: 14px;
+  }
+
+  .accordion-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 20px;
+  }
+
+  .accordion-body {
+    padding: 0 0 15px 0;
+  }
+
+  .answer-content {
+    flex-direction: column;
+    padding: 15px;
+  }
+
+  .answer-icon {
+    font-size: 20px;
+  }
+
+  .btn-logout {
+    font-size: 13px;
+    padding: 10px 18px;
   }
 }
 

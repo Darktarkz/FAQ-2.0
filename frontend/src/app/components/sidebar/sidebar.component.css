@@ -431,6 +431,8 @@ textarea.form-control {
 
   .sidebar-container.expanded .sidebar {
     width: 250px;
+    /* Overlay oscuro al expandir en móvil */
+    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.2), 0 0 0 100vw rgba(0, 0, 0, 0.45);
   }
 
   .sidebar-header {
@@ -449,5 +451,65 @@ textarea.form-control {
 
   .form-buttons {
     flex-direction: column;
+  }
+}
+
+/* ===== RESPONSIVE: MÓVIL PEQUEÑO (≤480px) ===== */
+@media (max-width: 480px) {
+  .sidebar {
+    width: 52px;
+  }
+
+  .sidebar-container.expanded .sidebar {
+    width: 240px;
+  }
+
+  .sidebar-header {
+    padding: 10px;
+    min-height: 52px;
+  }
+
+  .logo-icon {
+    font-size: 1.5rem;
+  }
+
+  .toggle-btn {
+    min-width: 34px;
+    height: 34px;
+    font-size: 1.1rem;
+    padding: 6px 8px;
+  }
+
+  .menu-item {
+    padding: 12px 14px;
+    font-size: 0.9rem;
+  }
+
+  .menu-item .icon {
+    font-size: 1.3rem;
+    min-width: 26px;
+  }
+
+  .modal-content {
+    width: 100%;
+    max-height: 100vh;
+    border-radius: 16px 16px 0 0;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    margin: 0;
+  }
+
+  .modal-body {
+    padding: 20px 15px;
+  }
+
+  .modal-header {
+    padding: 18px 20px;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .modal-header h3 {
+    font-size: 1.2rem;
   }
 }
