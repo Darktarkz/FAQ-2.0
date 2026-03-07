@@ -84,7 +84,15 @@ class TicketController extends Controller
 
             // Enviar correo de notificación (no bloquear si falla)
             try {
-                $this->enviarCorreoSoporte($ticket, $request->file('screenshot'), $camposPersonalizados);
+                // Recoger archivos de campos personalizados (archivo_*)
+                $archivosCustom = [];
+                foreach ($request->allFiles() as $key => $file) {
+                    if (str_starts_with($key, 'archivo_')) {
+                        $nombreCampo = substr($key, strlen('archivo_'));
+                        $archivosCustom[$nombreCampo] = $file;
+                    }
+                }
+                $this->enviarCorreoSoporte($ticket, $request->file('screenshot'), $camposPersonalizados, $archivosCustom);
             } catch (\Throwable $mailError) {
                 \Log::error('Error al enviar correo del ticket ' . $ticket->numero_ticket . ': ' . $mailError->getMessage());
             }
@@ -106,7 +114,7 @@ class TicketController extends Controller
     /**
      * Enviar correo de notificación usando PHPMailer
      */
-    private function enviarCorreoSoporte(Ticket $ticket, $screenshotFile = null, array $camposRaw = [])
+    private function enviarCorreoSoporte(Ticket $ticket, $screenshotFile = null, array $camposRaw = [], array $archivosCustom = [])
     {
         $mail = new PHPMailer(true);
 
@@ -195,7 +203,7 @@ class TicketController extends Controller
                 $mensaje .= "<b>Pregunta:</b> " . htmlspecialchars($preguntaNombre) . "<br>";
             }
 
-            // Campos del formulario (excluir claves con prefijo _)
+            // Campos del formulario (excluir claves con prefijo _ y campos de archivo)
             $camposUsuario = array_filter($camposData, fn($k) => !str_starts_with($k, '_'), ARRAY_FILTER_USE_KEY);
             if (!empty($camposUsuario)) {
                 $mensaje .= "<br><b style='color: #4285f4;'>Información del Ticket:</b><br>";
@@ -207,8 +215,37 @@ class TicketController extends Controller
                     } elseif (is_array($valor)) {
                         $valor = implode(', ', $valor);
                     }
+                    // Omitir campos de archivo (se mostrarán como imagen inline)
+                    $esArchivo = is_string($valor) && preg_match('/\.(png|jpg|jpeg|gif|webp|bmp)$/i', $valor);
+                    if ($esArchivo) continue;
                     $mensaje .= "<b>" . htmlspecialchars($label) . ":</b> " . htmlspecialchars((string) $valor) . "<br>";
                 }
+            }
+
+            // Imágenes de campos file (inline) y otros archivos (adjunto)
+            $extensionesImagen = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'];
+            foreach ($archivosCustom as $nombreCampo => $archivoFile) {
+                if (!$archivoFile || !$archivoFile->isValid()) continue;
+                $ext = strtolower($archivoFile->getClientOriginalExtension());
+                $label = $etiquetas[$nombreCampo] ?? ucwords(str_replace('_', ' ', $nombreCampo));
+                if (in_array($ext, $extensionesImagen)) {
+                    $cid = 'img_campo_' . preg_replace('/[^a-z0-9]/i', '_', $nombreCampo);
+                    $mail->addEmbeddedImage($archivoFile->getRealPath(), $cid, $archivoFile->getClientOriginalName());
+                    $mensaje .= "<br><b>" . htmlspecialchars($label) . ":</b><br>";
+                    $mensaje .= '<img src="cid:' . $cid . '" style="max-width:100%; border:1px solid #ddd; border-radius:4px; margin-top:6px;"><br>';
+                } else {
+                    // Archivo no-imagen: adjuntar y mencionar en el cuerpo
+                    $mail->addAttachment($archivoFile->getRealPath(), $archivoFile->getClientOriginalName());
+                    $mensaje .= "<br><b>" . htmlspecialchars($label) . ":</b> 📎 " . htmlspecialchars($archivoFile->getClientOriginalName()) . " <i>(ver adjunto)</i><br>";
+                }
+            }
+
+            // Screenshot (inline al final)
+            if ($screenshotFile && $screenshotFile->isValid()) {
+                $cidScreen = 'screenshot_ticket';
+                $mail->addEmbeddedImage($screenshotFile->getRealPath(), $cidScreen, $screenshotFile->getClientOriginalName());
+                $mensaje .= "<br><b>Captura de pantalla:</b><br>";
+                $mensaje .= '<img src="cid:' . $cidScreen . '" style="max-width:100%; border:1px solid #ddd; border-radius:4px; margin-top:6px;"><br>';
             }
 
             // Fecha en zona horaria Colombia
@@ -244,14 +281,6 @@ class TicketController extends Controller
             ';
             
             $mail->Body = $message;
-
-            // Adjuntar screenshot si existe
-            if ($screenshotFile && $screenshotFile->isValid()) {
-                $mail->addAttachment(
-                    $screenshotFile->getRealPath(),
-                    $screenshotFile->getClientOriginalName()
-                );
-            }
 
             $mail->send();
             
