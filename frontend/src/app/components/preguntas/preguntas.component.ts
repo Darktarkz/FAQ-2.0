@@ -8,6 +8,7 @@ import { AuthService } from '../../services/auth.service';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { BotonSoporteComponent } from '../boton-soporte/boton-soporte.component';
 import { environment } from '../../../environments/environment';
+import { MetricasService } from '../../services/metricas.service';
 
 @Component({
   selector: 'app-preguntas',
@@ -37,12 +38,16 @@ export class PreguntasComponent implements OnInit {
   draggedIndex: number | null = null;
   ordenOriginal: Pregunta[] = [];
 
+  // Votos: mapa preguntaId -> { util, no_util, votado }
+  votosMap: { [id: number]: { util: number; no_util: number; votado: 'util' | 'no_util' | null } } = {};
+
   constructor(
     private preguntaService: PreguntaService,
     private categoriaService: CategoriaService,
     public authService: AuthService,
     private router: Router,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private metricasService: MetricasService
   ) {}
 
   ngOnInit() {
@@ -102,16 +107,10 @@ export class PreguntasComponent implements OnInit {
 
   cargarModulosHijos(idPadre: number) {
     const hijos = this.modulosCompletos.filter(m => Number(m.idpadre) === idPadre);
-    
-    if (hijos.length > 0) {
-      // Hay submódulos, mostrarlos
-      this.modulosActuales = hijos;
-      this.preguntasFiltradas = [];
-    } else {
-      // No hay más submódulos, mostrar preguntas
-      this.modulosActuales = [];
-      this.filtrarPreguntas(idPadre);
-    }
+    this.modulosActuales = hijos;
+
+    // Siempre cargar preguntas directas del módulo actual (independiente de si tiene hijos)
+    this.preguntasFiltradas = this.preguntas.filter(p => p.Idmodulo === idPadre);
   }
 
   filtrarPreguntas(idModulo: number) {
@@ -162,6 +161,31 @@ export class PreguntasComponent implements OnInit {
 
   togglePregunta(index: number) {
     this.preguntaExpandida = this.preguntaExpandida === index ? null : index;
+    // Cargar votos de la pregunta si se expande
+    if (this.preguntaExpandida === index) {
+      const pregunta = this.preguntasFiltradas[index];
+      const id = Number(pregunta.ID);
+      if (id && !this.votosMap[id]) {
+        const votadoLocal = this.metricasService.getVotoLocal(id);
+        this.votosMap[id] = { util: 0, no_util: 0, votado: votadoLocal };
+        this.metricasService.getVotosPregunta(id).subscribe({
+          next: (r) => { this.votosMap[id] = { ...this.votosMap[id], util: r.util, no_util: r.no_util }; },
+          error: () => {}
+        });
+      }
+    }
+  }
+
+  votar(pregunta: Pregunta, voto: 'util' | 'no_util') {
+    const id = Number(pregunta.ID);
+    if (!id) return;
+    this.metricasService.votar(id, voto).subscribe({
+      next: (r) => {
+        this.votosMap[id] = { util: r.util, no_util: r.no_util, votado: voto };
+        this.metricasService.setVotoLocal(id, voto);
+      },
+      error: () => {}
+    });
   }
 
   getIconUrl(icono: string): string {

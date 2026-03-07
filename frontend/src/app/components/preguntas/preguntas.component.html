@@ -5,11 +5,15 @@
       <div class="Logos-header">
         <img src="/idartes-logo.png" alt="Logo IDARTES" class="logo-idartes" />
         <div>
-        <h1>❔Preguntas Frecuentes</h1>
-        <p class="subtitle">Encuentra respuestas a las preguntas más comunes</p></div>
-        <img src="/Logo_Comunicarte_Idartes.png" alt="Logo Comunicarte IDARTES" class="logo-comunicarte"/>
+          <h1>❔Preguntas Frecuentes</h1>
+          <p class="subtitle">Encuentra respuestas a las preguntas más comunes</p>
+        </div>
+        <img
+          src="/Logo_Comunicarte_Idartes.png"
+          alt="Logo Comunicarte IDARTES"
+          class="logo-comunicarte"
+        />
       </div>
-      
     </div>
     <button class="btn-logout" (click)="logout()" *ngIf="authService.isLoggedIn()">
       🚪 Cerrar sesión
@@ -104,10 +108,7 @@
   </div>
 
   <!-- Vista de Preguntas (Accordion) -->
-  <div
-    class="questions-section"
-    *ngIf="preguntasFiltradas.length > 0 && modulosActuales.length === 0"
-  >
+  <div class="questions-section" *ngIf="preguntasFiltradas.length > 0">
     <div class="questions-header">
       <h2>💬 Preguntas y Respuestas</h2>
       <p class="questions-count">{{ preguntasFiltradas.length }} pregunta(s) disponible(s)</p>
@@ -153,15 +154,40 @@
             <div class="answer-icon">💡</div>
             <p [innerHTML]="sanitizar(pregunta.Respuesta)"></p>
           </div>
-          
+
+          <!-- Votación: ¿Fue útil? -->
+          <div class="vote-section">
+            <p class="vote-question">¿Esta respuesta fue útil?</p>
+            <div class="vote-buttons">
+              <button
+                class="vote-btn util"
+                [class.active]="votosMap[$any(pregunta.ID)]?.votado === 'util'"
+                (click)="votar(pregunta, 'util')"
+                [title]="'Útil: ' + (votosMap[$any(pregunta.ID)]?.util || 0)"
+              >
+                👍 Útil <span class="vote-count">{{ votosMap[$any(pregunta.ID)]?.util || 0 }}</span>
+              </button>
+              <button
+                class="vote-btn no-util"
+                [class.active]="votosMap[$any(pregunta.ID)]?.votado === 'no_util'"
+                (click)="votar(pregunta, 'no_util')"
+                [title]="'No útil: ' + (votosMap[$any(pregunta.ID)]?.no_util || 0)"
+              >
+                👎 No útil
+                <span class="vote-count">{{ votosMap[$any(pregunta.ID)]?.no_util || 0 }}</span>
+              </button>
+            </div>
+          </div>
+
           <!-- Botón de soporte al final de cada respuesta -->
           <div class="answer-support">
             <p class="support-text">¿Esta respuesta no resolvió tu problema?</p>
-            <app-boton-soporte 
+            <app-boton-soporte
               [moduloId]="moduloActualId"
               [moduloNombre]="moduloActualNombre"
               [preguntaNombre]="pregunta.Pregunta"
-              posicion="static">
+              posicion="static"
+            >
             </app-boton-soporte>
           </div>
         </div>

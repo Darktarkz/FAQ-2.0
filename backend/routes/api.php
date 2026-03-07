@@ -7,9 +7,10 @@ use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\ModuloController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\TicketController;
+use App\Http\Controllers\FormularioCampoController;
 use App\Http\Controllers\FormularioTemplateController;
 use App\Http\Controllers\ModuloFormularioConfigController;
-use App\Http\Controllers\FormularioCampoController;
+use App\Http\Controllers\MetricasController;
 
 /*
 |--------------------------------------------------------------------------
@@ -60,6 +61,10 @@ Route::prefix('formulario-config')->group(function () {
 
 // Ruta pública para obtener campos de formulario por módulo (usada en formulario de soporte público)
 Route::get('/formulario-campos/modulo/{moduloId}', [FormularioCampoController::class, 'getPorModulo']);
+
+// Rutas públicas de votos (usuarios sin auth pueden votar)
+Route::post('/votos', [MetricasController::class, 'votar']);
+Route::get('/votos/{preguntaId}', [MetricasController::class, 'votosPregunta']);
 
 // Rutas protegidas (requieren autenticación)
 Route::middleware('auth:sanctum')->group(function () {
@@ -126,8 +131,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/reordenar', [FormularioCampoController::class, 'reordenar']);          // POST /api/formulario-campos/reordenar (reordenar campos)
     });
     Route::prefix('tickets')->group(function () {
-        Route::get('/', [TicketController::class, 'index']);                // GET /api/tickets (listar todos)
-        Route::get('/{id}', [TicketController::class, 'show']);             // GET /api/tickets/{id} (ver detalle)
-        Route::put('/{id}/estado', [TicketController::class, 'updateEstado']); // PUT /api/tickets/{id}/estado (actualizar estado)
+        Route::get('/', [TicketController::class, 'index']);
+        Route::get('/{id}', [TicketController::class, 'show']);
+        Route::put('/{id}/estado', [TicketController::class, 'updateEstado']);
+    });
+
+    // Métricas del dashboard (solo admin)
+    Route::prefix('metricas')->group(function () {
+        Route::get('/dashboard', [MetricasController::class, 'dashboard']);
+        Route::get('/exportar-csv', [MetricasController::class, 'exportarCsv']);
     });
 });
