@@ -13,6 +13,7 @@ import { FormularioSoporteComponent } from '../formulario-soporte/formulario-sop
 export class PaginaSoporteComponent implements OnInit {
   moduloId: number = 0;
   moduloNombre: string = '';
+  preguntaNombre: string = '';
 
   constructor(
     private route: ActivatedRoute,
@@ -24,6 +25,7 @@ export class PaginaSoporteComponent implements OnInit {
     this.route.queryParams.subscribe(params => {
       this.moduloId = +params['modulo_id'] || 0;
       this.moduloNombre = params['modulo_nombre'] || 'Módulo no especificado';
+      this.preguntaNombre = params['pregunta_nombre'] || '';
     });
   }
 

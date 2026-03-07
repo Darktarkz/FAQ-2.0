@@ -108,7 +108,8 @@ class FormularioCampoController extends Controller
                 'opciones' => $request->opciones,
                 'validacion' => $request->validacion,
                 'orden' => $request->orden,
-                'tamano_columna' => $request->tamano_columna ?? 12
+                'tamano_columna' => $request->tamano_columna ?? 12,
+                'visible' => $request->visible ?? true,
             ]);
 
             \Log::info("Campo creado exitosamente - ID: {$campo->id}, Template ID: {$template->id}, Nombre: {$campo->nombre_campo}");

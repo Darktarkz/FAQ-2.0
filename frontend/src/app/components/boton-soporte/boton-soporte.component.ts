@@ -12,6 +12,7 @@ import { Router } from '@angular/router';
 export class BotonSoporteComponent implements OnInit, OnDestroy {
   @Input() moduloId!: number;
   @Input() moduloNombre!: string;
+  @Input() preguntaNombre: string = '';
   @Input() posicion: 'fixed' | 'static' = 'fixed';
 
   countdown = 30;
@@ -53,7 +54,8 @@ export class BotonSoporteComponent implements OnInit, OnDestroy {
     this.router.navigate(['/soporte'], {
       queryParams: {
         modulo_id: this.moduloId,
-        modulo_nombre: this.moduloNombre
+        modulo_nombre: this.moduloNombre,
+        pregunta_nombre: this.preguntaNombre
       }
     });
   }

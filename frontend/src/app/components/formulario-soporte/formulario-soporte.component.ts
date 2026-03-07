@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TicketService, Ticket } from '../../services/ticket.service';
@@ -11,9 +11,10 @@ import { FormularioCampoService, FormularioCampo } from '../../services/formular
   templateUrl: './formulario-soporte.component.html',
   styleUrls: ['./formulario-soporte.component.css']
 })
-export class FormularioSoporteComponent implements OnInit {
+export class FormularioSoporteComponent implements OnInit, OnChanges {
   @Input() moduloId!: number;
   @Input() moduloNombre!: string;
+  @Input() preguntaNombre: string = '';
 
   // Campos personalizados del módulo
   camposPersonalizados: FormularioCampo[] = [];
@@ -37,14 +38,20 @@ export class FormularioSoporteComponent implements OnInit {
     this.cargarCamposPersonalizados();
   }
 
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['moduloId'] && !changes['moduloId'].firstChange && changes['moduloId'].currentValue) {
+      this.cargarCamposPersonalizados();
+    }
+  }
+
   cargarCamposPersonalizados(): void {
     this.cargandoFormulario = true;
     
     this.formularioCampoService.getPorModulo(this.moduloId).subscribe({
       next: (response) => {
         if (response.success && response.campos) {
-          // Solo campos visibles
-          this.camposPersonalizados = response.campos.filter(campo => campo.visible);
+          // Solo campos visibles (visible !== false para soportar columna opcional/no migrada)
+          this.camposPersonalizados = response.campos.filter(campo => campo.visible !== false);
           
           // Inicializar valores
           this.camposPersonalizados.forEach(campo => {
@@ -165,6 +172,11 @@ export class FormularioSoporteComponent implements OnInit {
       }
     }
 
+    // Incluir metadatos de contexto (no son campos del usuario)
+    if (this.preguntaNombre) {
+      camposData['_pregunta_nombre'] = this.preguntaNombre;
+    }
+
     // Agregar campos personalizados como JSON
     formData.append('campos_personalizados', JSON.stringify(camposData));
 
@@ -189,8 +201,17 @@ export class FormularioSoporteComponent implements OnInit {
       error: (error) => {
         console.error('Error al enviar ticket:', error);
         this.mostrarError = true;
-        this.mensajeError = error.error?.message || 'Error al enviar el ticket. Por favor intenta nuevamente.';
-        setTimeout(() => this.mostrarError = false, 5000);
+        // Mostrar detalle real: errores de validación (422) o mensaje de error (500)
+        if (error.error?.errors) {
+          const errores = error.error.errors;
+          const mensajes = Object.entries(errores)
+            .map(([campo, msgs]) => `${campo}: ${(msgs as string[]).join(', ')}`)
+            .join(' | ');
+          this.mensajeError = `Error de validación: ${mensajes}`;
+        } else {
+          this.mensajeError = error.error?.message || `Error ${error.status}: ${error.statusText}`;
+        }
+        setTimeout(() => this.mostrarError = false, 8000);
         this.enviando = false;
       }
     });

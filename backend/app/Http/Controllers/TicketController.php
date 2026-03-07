@@ -18,6 +18,12 @@ class TicketController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        \Log::info('Ticket store - datos recibidos: ', [
+            'modulo_id' => $request->input('modulo_id'),
+            'tiene_campos' => $request->has('campos_personalizados'),
+            'campos_json' => $request->input('campos_personalizados'),
+        ]);
+
         $validator = Validator::make($request->all(), [
             'modulo_id' => 'required|exists:modulos,id',
             'campos_personalizados' => 'required|json',
@@ -25,8 +31,10 @@ class TicketController extends Controller
         ]);
 
         if ($validator->fails()) {
+            \Log::error('Ticket store - validacion fallida: ', $validator->errors()->toArray());
             return response()->json([
                 'success' => false,
+                'message' => 'Datos inválidos: ' . implode(', ', $validator->errors()->all()),
                 'errors' => $validator->errors()
             ], 422);
         }
@@ -44,21 +52,42 @@ class TicketController extends Controller
             }
 
             // Decodificar campos personalizados
-            $camposPersonalizados = json_decode($request->campos_personalizados, true);
+            $camposPersonalizados = json_decode($request->campos_personalizados, true) ?? [];
+
+            // Extraer campos legacy desde campos_personalizados (la tabla los requiere NOT NULL)
+            $nombreCompleto = $camposPersonalizados['nombre_completo']
+                ?? $camposPersonalizados['nombre']
+                ?? $camposPersonalizados['nombre_colaborador']
+                ?? 'N/A';
+            $correo = $camposPersonalizados['correo']
+                ?? $camposPersonalizados['email']
+                ?? $camposPersonalizados['correo_electronico']
+                ?? 'N/A';
+            $descripcion = $camposPersonalizados['descripcion']
+                ?? $camposPersonalizados['problema']
+                ?? $camposPersonalizados['descripcion_problema']
+                ?? 'Ver campos personalizados';
 
             // Crear ticket
             $ticket = Ticket::create([
-                'numero_ticket' => $numeroTicket,
-                'modulo_id' => $request->modulo_id,
-                'campos_personalizados' => $camposPersonalizados,
-                'screenshot_path' => $screenshotPath,
+                'numero_ticket'        => $numeroTicket,
+                'modulo_id'            => $request->modulo_id,
+                'nombre_completo'      => $nombreCompleto,
+                'correo'               => $correo,
+                'descripcion'          => $descripcion,
+                'campos_personalizados'=> $camposPersonalizados,
+                'screenshot_path'      => $screenshotPath,
             ]);
 
             // Cargar relación del módulo
             $ticket->load('modulo');
 
-            // Enviar correo de notificación
-            $this->enviarCorreoSoporte($ticket, $request->file('screenshot'));
+            // Enviar correo de notificación (no bloquear si falla)
+            try {
+                $this->enviarCorreoSoporte($ticket, $request->file('screenshot'), $camposPersonalizados);
+            } catch (\Throwable $mailError) {
+                \Log::error('Error al enviar correo del ticket ' . $ticket->numero_ticket . ': ' . $mailError->getMessage());
+            }
 
             return response()->json([
                 'success' => true,
@@ -77,30 +106,72 @@ class TicketController extends Controller
     /**
      * Enviar correo de notificación usando PHPMailer
      */
-    private function enviarCorreoSoporte(Ticket $ticket, $screenshotFile = null)
+    private function enviarCorreoSoporte(Ticket $ticket, $screenshotFile = null, array $camposRaw = [])
     {
         $mail = new PHPMailer(true);
 
         try {
             // Configuración del servidor desde .env
             $mail->isSMTP();
-            $mail->Host = env('MAIL_HOST', 'smtp.gmail.com');
-            $mail->SMTPAuth = true;
-            $mail->Username = env('MAIL_USERNAME');
-            $mail->Password = env('MAIL_PASSWORD');
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port = (int) env('MAIL_PORT', 587);
-            $mail->CharSet = 'UTF-8';
+            $mail->Host       = env('MAIL_HOST', 'smtp.gmail.com');
+            $mail->SMTPAuth   = true;
+            $mail->Username   = env('MAIL_USERNAME');
+            $mail->Password   = env('MAIL_PASSWORD');
+            $mail->Port       = (int) env('MAIL_PORT', 587);
+            $mail->CharSet    = 'UTF-8';
+
+            $encryption = strtolower(env('MAIL_ENCRYPTION', 'tls'));
+            if ($encryption === 'ssl') {
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMIME;
+            } else {
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; // tls
+            }
 
             // Remitente y destinatario
             $mail->setFrom(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME', 'Sistema de Tickets IDARTES'));
             $mail->addAddress(env('MAIL_SOPORTE_TO', 'jineth.moreno@idartes.gov.co'));
-            $mail->addCC(env('MAIL_SOPORTE_CC', 'soporte.ti@idartes.gov.co'));
+            $mailCC = env('MAIL_SOPORTE_CC');
+            if ($mailCC && filter_var($mailCC, FILTER_VALIDATE_EMAIL)) {
+                $mail->addCC($mailCC);
+            }
 
-            // Extraer correo y nombre desde campos_personalizados
-            $campos = $ticket->campos_personalizados ?? [];
-            $correoRemitente = $campos['correo'] ?? $campos['email'] ?? $campos['correo_electronico'] ?? null;
-            $nombreRemitente = $campos['nombre_completo'] ?? $campos['nombre'] ?? $campos['nombre_colaborador'] ?? $correoRemitente;
+            // Cargar etiquetas reales del template del módulo
+            $etiquetas = [];
+            $template = \App\Models\FormularioTemplate::porModulo($ticket->modulo_id);
+            if ($template) {
+                foreach ($template->campos as $campo) {
+                    $etiquetas[$campo->nombre_campo] = $campo->etiqueta;
+                }
+            }
+
+            // Usar los campos pasados directamente (más fiables que releer del modelo)
+            $camposData = !empty($camposRaw) ? $camposRaw : ($ticket->campos_personalizados ?? []);
+            \Log::info('enviarCorreo - camposData: ', $camposData);
+
+            // Extraer metadatos de contexto (prefijo _)
+            $preguntaNombre = $camposData['_pregunta_nombre'] ?? null;
+
+            // Determinar módulo / submódulo
+            $modulo = $ticket->modulo;
+            $moduloNombre = $modulo->nombre ?? '';
+            $submoduloNombre = null;
+            if (!empty($modulo->idpadre)) {
+                $padre = \App\Models\Modulo::find($modulo->idpadre);
+                if ($padre) {
+                    $submoduloNombre = $moduloNombre;
+                    $moduloNombre = $padre->nombre;
+                }
+            }
+
+            // Buscar correo para Reply-To (primer valor que sea email válido)
+            $correoRemitente = null;
+            $nombreRemitente = null;
+            foreach ($camposData as $clave => $valor) {
+                if (!$correoRemitente && is_string($valor) && filter_var($valor, FILTER_VALIDATE_EMAIL)) {
+                    $correoRemitente = $valor;
+                    $nombreRemitente = $camposData[array_key_first($camposData)] ?? $valor;
+                }
+            }
             if ($correoRemitente) {
                 $mail->addReplyTo($correoRemitente, $nombreRemitente);
             }
@@ -108,39 +179,41 @@ class TicketController extends Controller
             // Contenido
             $mail->isHTML(true);
             $mail->Subject = 'Nuevo Ticket de Soporte ' . $ticket->numero_ticket;
-            
-            // Construir mensaje con todos los datos del ticket
-            $mensaje = '';
-            $campos = [
-                'Número de Ticket' => $ticket->numero_ticket,
-                'Módulo' => $ticket->modulo->nombre,
-            ];
 
-            foreach ($campos as $nombre => $valor) {
-                if (!empty($valor)) {
-                    $mensaje .= "<b>" . htmlspecialchars($nombre) . ":</b> " . htmlspecialchars($valor) . "<br>";
-                }
+            // Encabezado: número de ticket
+            $mensaje = "<b>Número de Ticket:</b> " . htmlspecialchars($ticket->numero_ticket) . "<br>";
+
+            // Módulo y submódulo
+            $rutaModulo = htmlspecialchars($moduloNombre);
+            if ($submoduloNombre) {
+                $rutaModulo .= ' &rsaquo; ' . htmlspecialchars($submoduloNombre);
+            }
+            $mensaje .= "<b>Módulo:</b> " . $rutaModulo . "<br>";
+
+            // Pregunta que originó el ticket
+            if ($preguntaNombre) {
+                $mensaje .= "<b>Pregunta:</b> " . htmlspecialchars($preguntaNombre) . "<br>";
             }
 
-            // Agregar campos personalizados si existen
-            if ($ticket->campos_personalizados && is_array($ticket->campos_personalizados)) {
+            // Campos del formulario (excluir claves con prefijo _)
+            $camposUsuario = array_filter($camposData, fn($k) => !str_starts_with($k, '_'), ARRAY_FILTER_USE_KEY);
+            if (!empty($camposUsuario)) {
                 $mensaje .= "<br><b style='color: #4285f4;'>Información del Ticket:</b><br>";
-                foreach ($ticket->campos_personalizados as $nombreCampo => $valor) {
-                    if (!empty($valor)) {
-                        // Formatear el nombre del campo (snake_case a Title Case)
-                        $nombreFormateado = ucwords(str_replace('_', ' ', $nombreCampo));
-                        
-                        // Si el valor es booleano, convertir a Sí/No
-                        if (is_bool($valor)) {
-                            $valor = $valor ? 'Sí' : 'No';
-                        }
-                        
-                        $mensaje .= "<b>" . htmlspecialchars($nombreFormateado) . ":</b> " . htmlspecialchars($valor) . "<br>";
+                foreach ($camposUsuario as $clave => $valor) {
+                    if ($valor === null || $valor === '') continue;
+                    $label = $etiquetas[$clave] ?? ucwords(str_replace('_', ' ', $clave));
+                    if (is_bool($valor)) {
+                        $valor = $valor ? 'Sí' : 'No';
+                    } elseif (is_array($valor)) {
+                        $valor = implode(', ', $valor);
                     }
+                    $mensaje .= "<b>" . htmlspecialchars($label) . ":</b> " . htmlspecialchars((string) $valor) . "<br>";
                 }
             }
 
-            $mensaje .= "<br><b>Fecha:</b> " . $ticket->created_at->format('d/m/Y H:i:s');
+            // Fecha en zona horaria Colombia
+            $fechaColombia = $ticket->created_at->setTimezone('America/Bogota');
+            $mensaje .= "<br><b>Fecha:</b> " . $fechaColombia->format('d/m/Y H:i:s') . " (hora Colombia)";
 
             // Plantilla del mensaje
             $message = '

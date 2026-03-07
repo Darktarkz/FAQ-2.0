@@ -58,6 +58,9 @@ Route::prefix('formulario-config')->group(function () {
     Route::get('/modulo/{moduloId}', [ModuloFormularioConfigController::class, 'getPorModulo']); // GET /api/formulario-config/modulo/{id}
 });
 
+// Ruta pública para obtener campos de formulario por módulo (usada en formulario de soporte público)
+Route::get('/formulario-campos/modulo/{moduloId}', [FormularioCampoController::class, 'getPorModulo']);
+
 // Rutas protegidas (requieren autenticación)
 Route::middleware('auth:sanctum')->group(function () {
     
@@ -117,7 +120,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Gestión de campos personalizados de formularios (solo admin)
     Route::prefix('formulario-campos')->group(function () {
-        Route::get('/modulo/{moduloId}', [FormularioCampoController::class, 'getPorModulo']); // GET /api/formulario-campos/modulo/{moduloId} (obtener campos de un módulo)
         Route::post('/', [FormularioCampoController::class, 'store']);                        // POST /api/formulario-campos (crear campo)
         Route::put('/{id}', [FormularioCampoController::class, 'update']);                    // PUT /api/formulario-campos/{id} (actualizar campo)
         Route::delete('/{id}', [FormularioCampoController::class, 'destroy']);                // DELETE /api/formulario-campos/{id} (eliminar campo)
