@@ -15,6 +15,7 @@ frontend/*.log
 .idea/
 *.swp
 *.swo
+*.md
 
 # OS
 .DS_Store
