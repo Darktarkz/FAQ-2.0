@@ -104,21 +104,33 @@
           *ngIf="moduloConfig.camposPersonalizados && moduloConfig.camposPersonalizados.length > 0"
           class="campos-lista"
         >
-          <div *ngFor="let campo of moduloConfig.camposPersonalizados; let i = index; let first = first; let last = last" class="campo-personalizado">
+          <div
+            *ngFor="
+              let campo of moduloConfig.camposPersonalizados;
+              let i = index;
+              let first = first;
+              let last = last
+            "
+            class="campo-personalizado"
+          >
             <div class="campo-orden-btns">
               <button
                 class="btn-orden btn-orden-up"
                 [disabled]="first"
                 (click)="moverCampo(moduloConfig, i, -1)"
                 title="Subir"
-              >▲</button>
+              >
+                ▲
+              </button>
               <span class="campo-orden-num">{{ i + 1 }}</span>
               <button
                 class="btn-orden btn-orden-down"
                 [disabled]="last"
                 (click)="moverCampo(moduloConfig, i, 1)"
                 title="Bajar"
-              >▼</button>
+              >
+                ▼
+              </button>
             </div>
             <div class="campo-info">
               <div class="campo-header-custom">
@@ -188,16 +200,31 @@
 
   <!-- Modal para Agregar/Editar Campo -->
   <div *ngIf="mostrarModalCampo" class="modal-overlay" (click)="cerrarModalCampo()">
-    <div class="modal-content" [class.modal-campo]="campoEditando || plantillaSeleccionada" [class.modal-campo-con-plantillas]="!campoEditando && !plantillaSeleccionada" (click)="$event.stopPropagation()">
+    <div
+      class="modal-content"
+      [class.modal-campo]="campoEditando || plantillaSeleccionada"
+      [class.modal-campo-con-plantillas]="!campoEditando && !plantillaSeleccionada"
+      (click)="$event.stopPropagation()"
+    >
       <div class="modal-header">
-        <h3>{{ campoEditando ? 'Editar Campo' : (!plantillaSeleccionada ? 'Agregar Campos al Formulario' : 'Configurar Campo') }}</h3>
+        <h3>
+          {{
+            campoEditando
+              ? 'Editar Campo'
+              : !plantillaSeleccionada
+                ? 'Agregar Campos al Formulario'
+                : 'Configurar Campo'
+          }}
+        </h3>
         <button class="btn-close" (click)="cerrarModalCampo()">×</button>
       </div>
 
       <!-- PASO 1: Selector con checkboxes (solo al agregar, antes de elegir) -->
       <div *ngIf="!campoEditando && !plantillaSeleccionada" class="modal-body plantillas-body">
         <p class="plantillas-instruccion">Marca los campos que deseas agregar al formulario:</p>
-        <p class="plantillas-counter">{{ plantillasSeleccionadas.size }} campo(s) seleccionado(s)</p>
+        <p class="plantillas-counter">
+          {{ plantillasSeleccionadas.size }} campo(s) seleccionado(s)
+        </p>
         <div class="plantillas-grid">
           <div
             *ngFor="let plantilla of camposPredefinidos"
@@ -221,13 +248,11 @@
         </div>
         <div class="plantillas-footer">
           <div class="plantillas-footer-info">
-            <strong>{{ plantillasSeleccionadas.size }}</strong> de {{ camposPredefinidos.length }} seleccionados
+            <strong>{{ plantillasSeleccionadas.size }}</strong> de
+            {{ camposPredefinidos.length }} seleccionados
           </div>
           <div class="plantillas-footer-actions">
-            <button
-              class="btn btn-personalizado-footer"
-              (click)="seleccionarPersonalizado()"
-            >
+            <button class="btn btn-personalizado-footer" (click)="seleccionarPersonalizado()">
               ✨ Crear Personalizado
             </button>
             <button
@@ -235,7 +260,11 @@
               [disabled]="plantillasSeleccionadas.size === 0 || guardandoPlantillas"
               (click)="guardarSeleccionados()"
             >
-              {{ guardandoPlantillas ? 'Guardando...' : 'Agregar ' + plantillasSeleccionadas.size + ' Campo(s)' }}
+              {{
+                guardandoPlantillas
+                  ? 'Guardando...'
+                  : 'Agregar ' + plantillasSeleccionadas.size + ' Campo(s)'
+              }}
             </button>
           </div>
         </div>
