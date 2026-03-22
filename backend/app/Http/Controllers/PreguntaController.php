@@ -146,7 +146,7 @@ class PreguntaController extends Controller
     public function uploadImage(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'imagen' => 'required|image|mimes:jpeg,png,jpg,gif,svg,webp|max:5120',
+            'imagen' => 'required|file|mimes:jpeg,png,jpg,gif,svg,webp|max:10240',
         ]);
 
         $path = $request->file('imagen')->store('preguntas', 'public');

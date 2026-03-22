@@ -927,6 +927,7 @@ export class AdminModulosComponent implements OnInit {
   // Para manejo de archivos
   selectedFile: File | null = null;
   previewUrl: string | null = null;
+  eliminarIcono = false;
 
   // Permisos
   isAdmin = false;
@@ -1305,6 +1306,7 @@ export class AdminModulosComponent implements OnInit {
     this.idPadreSeleccionado = null;
     this.selectedFile = null;
     this.previewUrl = null;
+    this.eliminarIcono = false;
   }
 
   onModalCategoriaChange() {
@@ -1399,6 +1401,8 @@ export class AdminModulosComponent implements OnInit {
     }
     if (this.selectedFile) {
       formData.append('icono', this.selectedFile, this.selectedFile.name);
+    } else if (this.eliminarIcono) {
+      formData.append('eliminar_icono', '1');
     }
 
     if (this.editandoModulo) {
@@ -1480,6 +1484,7 @@ export class AdminModulosComponent implements OnInit {
   removeIcon() {
     this.selectedFile = null;
     this.previewUrl = null;
+    this.eliminarIcono = true;
     const fileInput = document.getElementById('modal-icono') as HTMLInputElement;
     if (fileInput) {
       fileInput.value = '';

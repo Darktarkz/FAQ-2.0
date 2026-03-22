@@ -117,6 +117,12 @@ class ModuloController extends Controller
             }
             $iconoPath = $request->file('icono')->store('iconos', 'public');
             $validated['icono'] = $iconoPath;
+        } elseif ($request->input('eliminar_icono') == '1') {
+            // El usuario eliminó el icono sin subir uno nuevo
+            if ($modulo->icono) {
+                Storage::disk('public')->delete($modulo->icono);
+            }
+            $validated['icono'] = null;
         }
 
         $modulo->update($validated);

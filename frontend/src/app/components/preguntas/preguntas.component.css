@@ -592,6 +592,8 @@
   padding: 20px;
   border-radius: 12px;
   border-left: 4px solid #65558F;
+  overflow: hidden;
+  min-width: 0;
 }
 
 .answer-icon {
@@ -599,25 +601,52 @@
   flex-shrink: 0;
 }
 
-.answer-content p {
+.answer-content p,
+.answer-content .answer-text {
   margin: 0;
   color: #555;
   line-height: 1.7;
   font-size: 15px;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  min-width: 0;
+}
+
+:host ::ng-deep .answer-text img {
+  max-width: 500px;
+  height: auto;
+  border-radius: 4px;
+}
+
+:host ::ng-deep .answer-text p {
+  margin: 0 0 0.5em 0;
+}
+
+:host ::ng-deep .answer-text p:last-child {
+  margin-bottom: 0;
+}
+
+:host ::ng-deep .answer-text .ql-align-center {
+  text-align: center;
+}
+
+:host ::ng-deep .answer-text .ql-align-right {
+  text-align: right;
+}
+
+:host ::ng-deep .answer-text .ql-align-justify {
+  text-align: justify;
 }
 
 /* Sección de soporte al final de cada respuesta */
 .answer-support {
-  margin-top: 20px;
-  padding: 20px;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  margin: -80px 0px 0px 450px;
   border-radius: 12px;
-  border: 2px dashed #65558F;
   text-align: center;
 }
 
 .support-text {
-  margin: 0 0 15px 0;
+  margin: 20px 0px 5px 0;
   color: #495057;
   font-size: 14px;
   font-weight: 500;

@@ -1,6 +1,7 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { QuillModule, QuillEditorComponent } from 'ngx-quill';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { PreguntaService, Pregunta } from '../../services/pregunta.service';
 import { CategoriaService, Modulo } from '../../services/categoria.service';
@@ -9,7 +10,7 @@ import { AuthService } from '../../services/auth.service';
 @Component({
   selector: 'app-admin-preguntas',
   standalone: true,
-  imports: [FormsModule, CommonModule],
+  imports: [FormsModule, CommonModule, QuillModule],
   template: `
     <div class="admin-preguntas">
       <div class="page-header">
@@ -157,8 +158,8 @@ import { AuthService } from '../../services/auth.service';
       </div>
 
       <!-- Modal de Edición/Creación -->
-      <div *ngIf="mostrarFormulario" class="modal-overlay" (click)="cerrarFormulario()">
-        <div class="modal-content" (click)="$event.stopPropagation()">
+      <div *ngIf="mostrarFormulario" class="modal-overlay">
+        <div class="modal-content">
           <div class="modal-header">
             <h3>{{ editandoPregunta ? 'Editar Pregunta' : 'Agregar Nueva Pregunta' }}</h3>
             <button class="btn-close" (click)="cerrarFormulario()">✕</button>
@@ -176,26 +177,16 @@ import { AuthService } from '../../services/auth.service';
 
               <div class="form-group">
                 <label>Respuesta:</label>
-                <div class="editor-shell">
-                  <div class="editor-toolbar">
-                    <button type="button" (click)="applyFormat('bold')" title="Negrita"><strong>B</strong></button>
-                    <button type="button" (click)="applyFormat('italic')" title="Cursiva"><em>I</em></button>
-                    <button type="button" (click)="applyFormat('underline')" title="Subrayado"><u>U</u></button>
-                    <button type="button" (click)="applyFormat('formatBlock', 'h3')" title="Subtítulo">H3</button>
-                    <button type="button" (click)="applyFormat('insertUnorderedList')" title="Lista">• Lista</button>
-                    <button type="button" (click)="applyFormat('insertOrderedList')" title="Lista numerada">1. Lista</button>
-                    <button type="button" (click)="insertLink()" title="Insertar enlace">🔗 Enlace</button>
-                    <button type="button" (click)="clearFormatting()" title="Limpiar formato">✕ Limpio</button>
-                  </div>
-                  <div
-                    #respuestaEditor
-                    class="rich-editor"
-                    contenteditable="true"
-                    (input)="syncRespuesta(respuestaEditor.innerHTML)"
-                    (blur)="syncRespuesta(respuestaEditor.innerHTML)"
-                    (paste)="onRespuestaPaste($event)"
-                  ></div>
-                </div>
+                <quill-editor
+                  #quillEditor
+                  [(ngModel)]="nuevaPregunta.Respuesta"
+                  name="respuesta"
+                  format="html"
+                  [modules]="quillModules"
+                  [styles]="{ height: '200px' }"
+                  placeholder="Escribe la respuesta aquí..."
+                  (onEditorCreated)="onEditorCreated($event)"
+                ></quill-editor>
                 <small class="help-text">Editor enriquecido: negritas, listas, enlaces y pegar imágenes (Ctrl+V) desde el portapapeles.</small>
                 <small class="uploading" *ngIf="subiendoImagen">Subiendo imagen del portapapeles...</small>
               </div>
@@ -667,6 +658,30 @@ import { AuthService } from '../../services/auth.service';
       border-radius: 4px;
       border-left: 3px solid #667eea;
       margin-bottom: 0;
+      overflow-wrap: break-word;
+      word-break: break-word;
+      overflow: hidden;
+    }
+
+    :host ::ng-deep .respuesta-text p {
+      margin: 0 0 0.3em 0;
+    }
+    :host ::ng-deep .respuesta-text p:last-child {
+      margin-bottom: 0;
+    }
+    :host ::ng-deep .respuesta-text img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    :host ::ng-deep .respuesta-text .ql-align-center {
+      text-align: center;
+    }
+    :host ::ng-deep .respuesta-text .ql-align-right {
+      text-align: right;
+    }
+    :host ::ng-deep .respuesta-text .ql-align-justify {
+      text-align: justify;
     }
 
     .pregunta-acciones {
@@ -794,81 +809,30 @@ import { AuthService } from '../../services/auth.service';
           resize: vertical;
         }
 
-        .editor-shell {
-          border: 1px solid #d9e1ec;
-          border-radius: 8px;
-          background-color: #f9fafb;
-          box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
-          direction: ltr !important;
-          unicode-bidi: isolate;
-          text-align: left;
-          writing-mode: horizontal-tb;
-        }
+      }
 
-        .editor-toolbar {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-          padding: 8px 10px;
-          border-bottom: 1px solid #e5e7eb;
-          background: linear-gradient(180deg, #fdfdff 0%, #f4f6fb 100%);
-          direction: ltr !important;
-          unicode-bidi: isolate;
-          text-align: left;
-        }
+      :host ::ng-deep .ql-container {
+        border-radius: 0 0 8px 8px;
+        font-size: 14px;
+        line-height: 1.6;
+      }
 
-        .editor-toolbar button {
-          border: 1px solid #d7deeb;
-          background: white;
-          color: #2c3e50;
-          border-radius: 6px;
-          padding: 6px 10px;
-          font-weight: 600;
-          font-size: 13px;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
+      :host ::ng-deep .ql-toolbar.ql-snow {
+        border-radius: 8px 8px 0 0;
+        background: linear-gradient(180deg, #fdfdff 0%, #f4f6fb 100%);
+      }
 
-        .editor-toolbar button:hover {
-          background: #eef2ff;
-          border-color: #c5cff5;
-          color: #4b5fd9;
-          transform: translateY(-1px);
-        }
+      :host ::ng-deep .ql-editor {
+        min-height: 180px;
+        background: white;
+      }
 
-        .rich-editor {
-          min-height: 180px;
-          padding: 12px;
-          background: white;
-          border-radius: 0 0 8px 8px;
-          outline: none;
-          font-size: 14px;
-          line-height: 1.6;
-          direction: ltr;
-          unicode-bidi: isolate;
-          text-align: left;
-          white-space: pre-wrap;
-          writing-mode: horizontal-tb;
-        }
+      :host ::ng-deep .ql-editor img {
+        max-width: 100%;
+      }
 
-        .rich-editor * {
-          direction: ltr;
-          unicode-bidi: isolate;
-          text-align: left;
-          writing-mode: horizontal-tb;
-        }
-
-        .rich-editor ol,
-        .rich-editor ul {
-          padding-left: 20px;
-          direction: ltr;
-          unicode-bidi: isolate;
-        }
-
-        .rich-editor:focus {
-          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
-          border-color: #667eea;
-        }
+      :host ::ng-deep quill-editor {
+        display: block;
       }
 
       .form-row {
@@ -1174,7 +1138,19 @@ export class AdminPreguntasComponent implements OnInit {
   };
 
   subiendoImagen = false;
-  respuestaHtml = '';
+
+  quillModules = {
+    toolbar: [
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ header: [2, 3, false] }],
+      [{ list: 'ordered' }, { list: 'bullet' }],
+      [{ align: [] }],
+      ['link', 'image'],
+      ['clean']
+    ]
+  };
+
+  quillInstance: any = null;
 
   mostrarModalLimpieza = false;
   cargandoLimpieza = false;
@@ -1185,8 +1161,7 @@ export class AdminPreguntasComponent implements OnInit {
   draggedIndex: number | null = null;
   ordenOriginal: Pregunta[] = [];
 
-  @ViewChild('respuestaEditor')
-  respuestaEditorRef?: ElementRef<HTMLElement>;
+  @ViewChild('quillEditor') quillEditorComponent?: QuillEditorComponent;
 
   getPreguntaId(p: any): any {
     return this.resolverIdPregunta(p) ?? p?.id ?? p?.ID ?? p?.Id ?? p?.id_pregunta ?? p?.Id_pregunta ?? p?.IdPreguntas ?? p?.idpreguntas;
@@ -1251,12 +1226,56 @@ export class AdminPreguntasComponent implements OnInit {
     private authService: AuthService
   ) {}
 
-  private setEditorContent(html: string) {
-    const editor = this.respuestaEditorRef?.nativeElement;
-    if (editor) {
-      editor.innerHTML = html || '';
-      this.enforceLtr();
-    }
+  onEditorCreated(quill: any) {
+    this.quillInstance = quill;
+
+    // Handler personalizado para el botón de imagen del toolbar
+    const toolbar = quill.getModule('toolbar');
+    toolbar.addHandler('image', () => {
+      const input = document.createElement('input');
+      input.setAttribute('type', 'file');
+      input.setAttribute('accept', 'image/*');
+      input.click();
+      input.onchange = () => {
+        const file = input.files?.[0];
+        if (!file) return;
+        this.subirImagenAlEditor(quill, file);
+      };
+    });
+
+    // Interceptar pegado de imágenes
+    quill.root.addEventListener('paste', (event: ClipboardEvent) => {
+      const items = event.clipboardData?.items;
+      if (!items) return;
+
+      const imagenItem = Array.from(items).find(item => item.type.startsWith('image/'));
+      if (!imagenItem) return;
+
+      const file = imagenItem.getAsFile();
+      if (!file) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      this.subirImagenAlEditor(quill, file);
+    });
+  }
+
+  private subirImagenAlEditor(quill: any, file: File) {
+    this.subiendoImagen = true;
+    this.preguntaService.uploadImagen(file).subscribe({
+      next: (resp) => {
+        const range = quill.getSelection(true);
+        quill.insertEmbed(range.index, 'image', resp.url);
+        quill.setSelection(range.index + 1);
+      },
+      error: (error: any) => {
+        console.error('Error al subir imagen:', error);
+        alert('No se pudo subir la imagen. Verifica el tamaño (máx 10MB) y formato.');
+      },
+      complete: () => {
+        this.subiendoImagen = false;
+      }
+    });
   }
 
   ngOnInit() {
@@ -1589,23 +1608,18 @@ export class AdminPreguntasComponent implements OnInit {
       Idmodulo: undefined,
       Aplicativo: undefined
     };
-    this.respuestaHtml = '';
     this.mostrarFormulario = true;
-    setTimeout(() => this.setEditorContent(''));
   }
 
   editarPregunta(pregunta: Pregunta) {
     this.editandoPregunta = true;
     this.nuevaPregunta = { ...pregunta };
-    this.respuestaHtml = pregunta.Respuesta || '';
     this.mostrarFormulario = true;
-    setTimeout(() => this.setEditorContent(this.respuestaHtml));
   }
 
   cerrarFormulario() {
     this.mostrarFormulario = false;
     this.editandoPregunta = false;
-    this.respuestaHtml = '';
   }
 
   actualizarModuloNombre() {
@@ -1618,103 +1632,7 @@ export class AdminPreguntasComponent implements OnInit {
     }
   }
 
-  syncRespuesta(html: string) {
-    this.enforceLtr();
-    this.respuestaHtml = html || '';
-    this.nuevaPregunta.Respuesta = this.respuestaHtml;
-  }
-
-  applyFormat(command: string, value?: string) {
-    this.respuestaEditorRef?.nativeElement?.focus();
-    document.execCommand(command, false, value);
-    this.refreshRespuestaFromEditor();
-  }
-
-  insertLink() {
-    const url = prompt('Ingresa el enlace (incluye https:// si aplica):');
-    if (!url) {
-      return;
-    }
-
-    const normalized = url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
-    document.execCommand('createLink', false, normalized);
-    this.refreshRespuestaFromEditor();
-  }
-
-  clearFormatting() {
-    document.execCommand('removeFormat');
-    document.execCommand('unlink');
-    this.refreshRespuestaFromEditor();
-  }
-
-  private refreshRespuestaFromEditor() {
-    const html = this.getEditorHtml();
-    this.syncRespuesta(html);
-  }
-
-  private getEditorHtml(): string {
-    return (this.respuestaEditorRef?.nativeElement?.innerHTML || this.respuestaHtml || '').trim();
-  }
-
-  private enforceLtr() {
-    const editor = this.respuestaEditorRef?.nativeElement;
-    if (!editor) return;
-    editor.setAttribute('dir', 'ltr');
-    editor.style.direction = 'ltr';
-    editor.style.unicodeBidi = 'isolate';
-    editor.style.textAlign = 'left';
-    editor.style.writingMode = 'horizontal-tb';
-
-    editor.querySelectorAll('[dir]').forEach(el => {
-      el.removeAttribute('dir');
-    });
-
-    editor.querySelectorAll('*').forEach(el => {
-      const e = el as HTMLElement;
-      e.style.direction = 'ltr';
-      e.style.unicodeBidi = 'isolate';
-      e.style.textAlign = 'left';
-      e.style.writingMode = 'horizontal-tb';
-    });
-  }
-
-  private insertHtmlAtCursor(html: string) {
-    const editor = this.respuestaEditorRef?.nativeElement;
-    if (!editor) {
-      this.syncRespuesta(`${this.nuevaPregunta.Respuesta || ''}${html}`);
-      return;
-    }
-
-    editor.focus();
-
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) {
-      editor.insertAdjacentHTML('beforeend', html);
-      this.refreshRespuestaFromEditor();
-      return;
-    }
-
-    const range = selection.getRangeAt(0);
-    range.deleteContents();
-
-    const temp = document.createElement('div');
-    temp.innerHTML = html;
-    const fragment = document.createDocumentFragment();
-    let node: ChildNode | null;
-    while ((node = temp.firstChild)) {
-      fragment.appendChild(node);
-    }
-
-    range.insertNode(fragment);
-    range.collapse(false);
-    selection.removeAllRanges();
-    selection.addRange(range);
-
-    this.refreshRespuestaFromEditor();
-  }
-
   guardarPregunta() {
-    this.refreshRespuestaFromEditor();
 
     const respuestaPlana = (this.nuevaPregunta.Respuesta || '').replace(/<[^>]*>/g, '').trim();
 
@@ -1805,42 +1723,6 @@ export class AdminPreguntasComponent implements OnInit {
 
   sanitizar(texto: string): SafeHtml {
     return this.sanitizer.bypassSecurityTrustHtml(texto || '');
-  }
-
-  onRespuestaPaste(event: ClipboardEvent) {
-    const items = event.clipboardData?.items;
-    if (!items || items.length === 0) {
-      return;
-    }
-
-    const imagenItem = Array.from(items).find(item => item.type.startsWith('image/'));
-    if (!imagenItem) {
-      return; // deja que el navegador maneje el pegado de texto normal
-    }
-
-    const file = imagenItem.getAsFile();
-    if (!file) {
-      return;
-    }
-
-    event.preventDefault();
-    this.subiendoImagen = true;
-
-    this.preguntaService.uploadImagen(file).subscribe({
-      next: (resp) => {
-        const url = resp.url;
-        const snippet = `<img src="${url}" alt="Imagen" style="max-width:100%;">`;
-        this.insertHtmlAtCursor(snippet);
-        this.enforceLtr();
-      },
-      error: (error) => {
-        console.error('Error al subir imagen del portapapeles:', error);
-        alert('No se pudo subir la imagen. Verifica el tamaño (máx 5MB) y formato.');
-      },
-      complete: () => {
-        this.subiendoImagen = false;
-      }
-    });
   }
 
   previsualizarLimpiezaNumeros() {

@@ -152,7 +152,7 @@
         <div class="accordion-body" *ngIf="preguntaExpandida === i && !modoReorden">
           <div class="answer-content">
             <div class="answer-icon">💡</div>
-            <p [innerHTML]="sanitizar(pregunta.Respuesta)"></p>
+            <div class="answer-text" [innerHTML]="sanitizar(pregunta.Respuesta)"></div>
           </div>
 
           <!-- Votación: ¿Fue útil? -->
@@ -177,19 +177,19 @@
                 <span class="vote-count">{{ votosMap[$any(pregunta.ID)]?.no_util || 0 }}</span>
               </button>
             </div>
+            <div class="answer-support">
+              <p class="support-text"><b>¿Esta respuesta no resolvió tu problema?</b></p>
+              <app-boton-soporte
+                [moduloId]="moduloActualId"
+                [moduloNombre]="moduloActualNombre"
+                [preguntaNombre]="pregunta.Pregunta"
+                posicion="static"
+              >
+              </app-boton-soporte>
+            </div>
           </div>
 
           <!-- Botón de soporte al final de cada respuesta -->
-          <div class="answer-support">
-            <p class="support-text">¿Esta respuesta no resolvió tu problema?</p>
-            <app-boton-soporte
-              [moduloId]="moduloActualId"
-              [moduloNombre]="moduloActualNombre"
-              [preguntaNombre]="pregunta.Pregunta"
-              posicion="static"
-            >
-            </app-boton-soporte>
-          </div>
         </div>
       </div>
     </div>
