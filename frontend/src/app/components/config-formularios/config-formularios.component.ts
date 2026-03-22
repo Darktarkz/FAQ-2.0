@@ -41,11 +41,39 @@ export class ConfigFormulariosComponent implements OnInit {
     { valor: 'tel', label: 'Teléfono' },
     { valor: 'number', label: 'Número' },
     { valor: 'date', label: 'Fecha' },
+    { valor: 'datetime-local', label: 'Fecha y Hora' },
     { valor: 'textarea', label: 'Área de Texto' },
     { valor: 'select', label: 'Lista Desplegable' },
     { valor: 'checkbox', label: 'Casilla de Verificación' },
     { valor: 'radio', label: 'Opción Múltiple' },
     { valor: 'file', label: 'Archivo' }
+  ];
+
+  plantillaSeleccionada: string | null = null;
+  plantillasSeleccionadas: Set<string> = new Set();
+  guardandoPlantillas: boolean = false;
+
+  camposPredefinidos = [
+    { key: 'nombre_completo', nombre_campo: 'nombre_completo', etiqueta: 'Nombre Completo', tipo: 'text', placeholder: 'Ingrese su nombre completo', tamano_columna: 6, icono: '👤' },
+    { key: 'tipo_identificacion', nombre_campo: 'tipo_identificacion', etiqueta: 'Tipo de Identificación', tipo: 'select', opciones: ['CC', 'CE', 'TI', 'NIT', 'Pasaporte'], tamano_columna: 6, icono: '🪪' },
+    { key: 'cedula', nombre_campo: 'cedula', etiqueta: 'Número de Documento', tipo: 'text', placeholder: 'Ingrese su número de documento', tamano_columna: 6, icono: '🔢' },
+    { key: 'correo', nombre_campo: 'correo', etiqueta: 'Correo Electrónico', tipo: 'email', placeholder: 'ejemplo@correo.com', tamano_columna: 6, icono: '📧' },
+    { key: 'numero_contrato', nombre_campo: 'numero_contrato', etiqueta: 'Número de Contrato', tipo: 'text', placeholder: 'Ingrese el número de contrato', tamano_columna: 6, icono: '📄' },
+    { key: 'plataforma', nombre_campo: 'plataforma', etiqueta: 'Plataforma', tipo: 'text', placeholder: 'Nombre de la plataforma', tamano_columna: 6, icono: '💻' },
+    { key: 'modulo', nombre_campo: 'modulo', etiqueta: 'Módulo', tipo: 'text', placeholder: 'Nombre del módulo', tamano_columna: 6, icono: '📦' },
+    { key: 'pregunta', nombre_campo: 'pregunta', etiqueta: 'Pregunta', tipo: 'text', placeholder: 'Escriba su pregunta', tamano_columna: 12, icono: '❓' },
+    { key: 'descripcion', nombre_campo: 'descripcion', etiqueta: 'Descripción', tipo: 'textarea', placeholder: 'Describa su problema detalladamente', tamano_columna: 12, icono: '📝' },
+    { key: 'error_screenshot', nombre_campo: 'error_screenshot', etiqueta: 'Captura de Error', tipo: 'file', descripcion_ayuda: 'Adjunte una captura de pantalla del error', tamano_columna: 12, icono: '📸' },
+    { key: 'fecha_hora', nombre_campo: 'fecha', etiqueta: 'Fecha y Hora', tipo: 'datetime-local', tamano_columna: 6, icono: '🕐' },
+    { key: 'fecha', nombre_campo: 'fecha', etiqueta: 'Fecha', tipo: 'date', tamano_columna: 6, icono: '📅' },
+    { key: 'numero_inventario', nombre_campo: 'numero_inventario', etiqueta: 'Número de Inventario', tipo: 'number', placeholder: 'Ingrese el número de inventario', tamano_columna: 6, icono: '🏷️' },
+    { key: 'contacto', nombre_campo: 'contacto', etiqueta: 'Contacto', tipo: 'number', placeholder: 'Número de contacto', tamano_columna: 6, icono: '📞' },
+    { key: 'productora', nombre_campo: 'productora', etiqueta: 'Productora', tipo: 'text', placeholder: 'Nombre de la productora', tamano_columna: 6, icono: '🎬' },
+    { key: 'tipo_persona', nombre_campo: 'tipo_persona', etiqueta: 'Tipo de Persona', tipo: 'select', opciones: ['Natural', 'Jurídica'], tamano_columna: 6, icono: '🏢' },
+    { key: 'usuario', nombre_campo: 'usuario', etiqueta: 'Usuario', tipo: 'text', placeholder: 'Nombre de usuario', tamano_columna: 6, icono: '🙍' },
+    { key: 'programa', nombre_campo: 'programa', etiqueta: 'Programa', tipo: 'text', placeholder: 'Nombre del programa', tamano_columna: 6, icono: '📚' },
+    { key: 'rol', nombre_campo: 'rol', etiqueta: 'Rol', tipo: 'text', placeholder: 'Rol del usuario', tamano_columna: 6, icono: '🎭' },
+    { key: 'actividad', nombre_campo: 'actividad', etiqueta: 'Actividad', tipo: 'text', placeholder: 'Descripción de la actividad', tamano_columna: 6, icono: '⚡' },
   ];
 
   constructor(
@@ -228,7 +256,108 @@ export class ConfigFormulariosComponent implements OnInit {
     this.moduloActual = moduloConfig;
     this.campoEditando = null;
     this.nuevoCampo = this.inicializarCampo();
+    this.plantillaSeleccionada = null;
+    this.plantillasSeleccionadas = new Set();
     this.mostrarModalCampo = true;
+  }
+
+  togglePlantilla(plantilla: any): void {
+    if (this.plantillasSeleccionadas.has(plantilla.key)) {
+      this.plantillasSeleccionadas.delete(plantilla.key);
+    } else {
+      this.plantillasSeleccionadas.add(plantilla.key);
+    }
+  }
+
+  guardarSeleccionados(): void {
+    if (!this.moduloActual || this.plantillasSeleccionadas.size === 0) return;
+    this.guardandoPlantillas = true;
+
+    const seleccionados = this.camposPredefinidos.filter(p =>
+      this.plantillasSeleccionadas.has(p.key)
+    );
+
+    const moduloRef = this.moduloActual;
+    let completados = 0;
+    let errores = 0;
+
+    seleccionados.forEach(plantilla => {
+      const campoData: any = {
+        modulo_id: moduloRef.modulo_id,
+        nombre_campo: plantilla.nombre_campo,
+        etiqueta: plantilla.etiqueta,
+        tipo: plantilla.tipo,
+        placeholder: (plantilla as any).placeholder || '',
+        descripcion_ayuda: (plantilla as any).descripcion_ayuda || '',
+        requerido: false,
+        opciones: (plantilla as any).opciones ? [...(plantilla as any).opciones] : null,
+        validacion: null,
+        orden: 0,
+        tamano_columna: plantilla.tamano_columna || 12,
+        visible: true
+      };
+
+      this.formularioCampoService.crear(campoData).subscribe({
+        next: (response) => {
+          completados++;
+          if (!response.success) errores++;
+          this.checkPlantillasCompletas(completados, seleccionados.length, errores, moduloRef);
+        },
+        error: () => {
+          completados++;
+          errores++;
+          this.checkPlantillasCompletas(completados, seleccionados.length, errores, moduloRef);
+        }
+      });
+    });
+  }
+
+  private checkPlantillasCompletas(completados: number, total: number, errores: number, moduloRef: ModuloConfig): void {
+    if (completados < total) return;
+    this.guardandoPlantillas = false;
+
+    if (errores === 0) {
+      this.exito = `${total} campo(s) agregados exitosamente`;
+    } else {
+      this.exito = `${total - errores} de ${total} campos agregados`;
+      if (errores > 0) this.error = `${errores} campo(s) no se pudieron crear`;
+    }
+
+    this.formularioCampoService.getPorModulo(moduloRef.modulo_id).subscribe({
+      next: (resp) => {
+        if (resp.success) {
+          moduloRef.camposPersonalizados = resp.campos || [];
+          const index = this.configuraciones.findIndex(c => c.modulo_id === moduloRef.modulo_id);
+          if (index !== -1) {
+            this.configuraciones[index] = { ...moduloRef };
+          }
+        }
+        this.cerrarModalCampo();
+      }
+    });
+    setTimeout(() => this.exito = '', 3000);
+  }
+
+  seleccionarPlantilla(plantilla: any): void {
+    this.plantillaSeleccionada = plantilla.key;
+    this.nuevoCampo = {
+      nombre_campo: plantilla.nombre_campo,
+      etiqueta: plantilla.etiqueta,
+      tipo: plantilla.tipo,
+      placeholder: plantilla.placeholder || '',
+      descripcion_ayuda: plantilla.descripcion_ayuda || '',
+      requerido: false,
+      opciones: plantilla.opciones ? [...plantilla.opciones] : null,
+      validacion: null,
+      orden: 0,
+      tamano_columna: plantilla.tamano_columna || 12,
+      visible: true
+    };
+  }
+
+  seleccionarPersonalizado(): void {
+    this.plantillaSeleccionada = 'personalizado';
+    this.nuevoCampo = this.inicializarCampo();
   }
 
   abrirModalEditarCampo(moduloConfig: ModuloConfig, campo: FormularioCampo): void {
@@ -243,6 +372,9 @@ export class ConfigFormulariosComponent implements OnInit {
     this.moduloActual = null;
     this.campoEditando = null;
     this.nuevoCampo = this.inicializarCampo();
+    this.plantillaSeleccionada = null;
+    this.plantillasSeleccionadas = new Set();
+    this.guardandoPlantillas = false;
   }
 
   guardarCampo(): void {
@@ -400,6 +532,41 @@ export class ConfigFormulariosComponent implements OnInit {
       error: (err) => {
         console.error('Error al actualizar visibilidad:', err);
         this.error = 'Error al actualizar visibilidad del campo';
+      }
+    });
+  }
+
+  moverCampo(moduloConfig: ModuloConfig, index: number, direccion: number): void {
+    const campos = moduloConfig.camposPersonalizados;
+    if (!campos) return;
+
+    const nuevoIndex = index + direccion;
+    if (nuevoIndex < 0 || nuevoIndex >= campos.length) return;
+
+    // Intercambiar posiciones en el array local
+    [campos[index], campos[nuevoIndex]] = [campos[nuevoIndex], campos[index]];
+
+    // Preparar datos de orden para el backend
+    const ordenData = campos.map((c, i) => ({ id: c.id!, orden: i }));
+
+    this.formularioCampoService.reordenar(ordenData).subscribe({
+      next: (response) => {
+        if (response.success) {
+          // Actualizar la referencia para detección de cambios
+          moduloConfig.camposPersonalizados = [...campos];
+          const idx = this.configuraciones.findIndex(c => c.modulo_id === moduloConfig.modulo_id);
+          if (idx !== -1) {
+            this.configuraciones[idx] = { ...moduloConfig };
+          }
+        } else {
+          // Revertir si falla
+          [campos[index], campos[nuevoIndex]] = [campos[nuevoIndex], campos[index]];
+          this.error = 'Error al reordenar campos';
+        }
+      },
+      error: () => {
+        [campos[index], campos[nuevoIndex]] = [campos[nuevoIndex], campos[index]];
+        this.error = 'Error al reordenar campos';
       }
     });
   }

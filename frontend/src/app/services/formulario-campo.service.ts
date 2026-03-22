@@ -8,7 +8,7 @@ export interface FormularioCampo {
   formulario_template_id?: number;
   nombre_campo: string;
   etiqueta: string;
-  tipo: 'text' | 'email' | 'tel' | 'number' | 'date' | 'select' | 'textarea' | 'file' | 'checkbox' | 'radio';
+  tipo: 'text' | 'email' | 'tel' | 'number' | 'date' | 'datetime-local' | 'select' | 'textarea' | 'file' | 'checkbox' | 'radio';
   placeholder?: string;
   descripcion_ayuda?: string;
   requerido: boolean;
