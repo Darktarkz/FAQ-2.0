@@ -90,6 +90,7 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // CRUD de módulos (solo admin)
     Route::prefix('modulos')->group(function () {
+        Route::put('/reordenar/batch', [ModuloController::class, 'reordenar']); // PUT /api/modulos/reordenar/batch
         Route::post('/', [ModuloController::class, 'store']);           // POST /api/modulos
         Route::put('/{id}', [ModuloController::class, 'update']);       // PUT /api/modulos/{id}
         Route::delete('/{id}', [ModuloController::class, 'destroy']);   // DELETE /api/modulos/{id}

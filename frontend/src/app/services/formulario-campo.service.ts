@@ -37,10 +37,12 @@ export class FormularioCampoService {
   constructor(private http: HttpClient) {}
 
   /**
-   * Obtener todos los campos de un módulo
+   * Obtener campos de un módulo
+   * @param incluirOcultos true para incluir campos con visible=false (uso admin)
    */
-  getPorModulo(moduloId: number): Observable<ApiResponse> {
-    return this.http.get<ApiResponse>(`${this.apiUrl}/modulo/${moduloId}`);
+  getPorModulo(moduloId: number, incluirOcultos: boolean = false): Observable<ApiResponse> {
+    const params = incluirOcultos ? '?incluir_ocultos=1' : '';
+    return this.http.get<ApiResponse>(`${this.apiUrl}/modulo/${moduloId}${params}`);
   }
 
   /**

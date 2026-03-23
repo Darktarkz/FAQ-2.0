@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import { CategoriaService } from '../../services/categoria.service';
 import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
@@ -9,12 +10,13 @@ interface Categoria {
   id?: number;
   nombre: string;
   descripcion?: string;
+  orden?: number;
 }
 
 @Component({
   selector: 'app-admin-categorias',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, DragDropModule],
   template: `
     <div class="admin-categorias">
       <h2>Gestión de Categorías</h2>
@@ -64,18 +66,37 @@ interface Categoria {
           />
         </div>
 
+        <div *ngIf="ordenCambiado" class="orden-aviso">
+          <span>⚠ Tienes cambios de orden sin guardar.</span>
+          <button class="btn-save-order" (click)="guardarOrden()">Guardar orden</button>
+          <button class="btn-cancel-order" (click)="descartarOrden()">Descartar</button>
+        </div>
+
         <div class="categories-table">
           <table>
             <thead>
               <tr>
+                <th class="col-drag"></th>
                 <th>ID</th>
                 <th>Nombre</th>
                 <th>Descripción</th>
                 <th>Acciones</th>
               </tr>
             </thead>
-            <tbody>
-              <tr *ngFor="let categoria of categoriasFiltradas">
+            <tbody
+              cdkDropList
+              (cdkDropListDropped)="onDrop($event)"
+              [cdkDropListDisabled]="!!busqueda"
+            >
+              <tr
+                *ngFor="let categoria of categoriasFiltradas"
+                cdkDrag
+                [cdkDragDisabled]="!!busqueda"
+                class="drag-row"
+              >
+                <td class="col-drag">
+                  <span cdkDragHandle class="drag-handle" title="Arrastrar para reordenar">⠿</span>
+                </td>
                 <td>{{ categoria.id }}</td>
                 <td>{{ categoria.nombre }}</td>
                 <td>{{ categoria.descripcion || '-' }}</td>
@@ -85,7 +106,7 @@ interface Categoria {
                 </td>
               </tr>
               <tr *ngIf="categoriasFiltradas.length === 0">
-                <td colspan="4" class="no-data">No hay categorías</td>
+                <td colspan="5" class="no-data">No hay categorías</td>
               </tr>
             </tbody>
           </table>
@@ -266,11 +287,98 @@ interface Categoria {
       color: #999;
       font-style: italic;
     }
+
+    .col-drag {
+      width: 40px;
+      text-align: center;
+    }
+
+    .drag-handle {
+      cursor: grab;
+      font-size: 20px;
+      color: #aaa;
+      user-select: none;
+      display: inline-block;
+      padding: 4px 8px;
+
+      &:hover {
+        color: #667eea;
+      }
+
+      &:active {
+        cursor: grabbing;
+      }
+    }
+
+    .drag-row {
+      transition: background-color 0.15s ease;
+
+      &.cdk-drag-preview {
+        box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        background: #fff;
+        border-radius: 4px;
+        opacity: 0.95;
+      }
+
+      &.cdk-drag-placeholder {
+        opacity: 0;
+      }
+
+      &.cdk-drag-animating {
+        transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+      }
+    }
+
+    .cdk-drop-list-dragging .drag-row:not(.cdk-drag-placeholder) {
+      transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+    }
+
+    .orden-aviso {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #fff8e1;
+      border: 1px solid #ffe082;
+      border-radius: 6px;
+      padding: 10px 16px;
+      margin-bottom: 16px;
+      font-size: 14px;
+      color: #795548;
+    }
+
+    .btn-save-order {
+      background-color: #667eea;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 14px;
+      cursor: pointer;
+      font-size: 13px;
+
+      &:hover {
+        background-color: #5568d3;
+      }
+    }
+
+    .btn-cancel-order {
+      background-color: #e0e0e0;
+      color: #333;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 14px;
+      cursor: pointer;
+      font-size: 13px;
+
+      &:hover {
+        background-color: #d0d0d0;
+      }
+    }
   `]
 })
 export class AdminCategoriasComponent implements OnInit {
   categorias: Categoria[] = [];
   busqueda = '';
+  ordenCambiado = false;
   
   editingCategoria: Categoria | null = null;
   nuevaCategoria: Categoria = {
@@ -295,7 +403,8 @@ export class AdminCategoriasComponent implements OnInit {
   cargarCategorias() {
     this.categoriaService.getCategorias().subscribe({
       next: (data: any[]) => {
-        this.categorias = data;
+        this.categorias = data.sort((a, b) => (a.orden ?? a.id) - (b.orden ?? b.id));
+        this.ordenCambiado = false;
       },
       error: (error: any) => {
         console.error('Error al cargar categorías:', error);
@@ -366,6 +475,33 @@ export class AdminCategoriasComponent implements OnInit {
       descripcion: ''
     };
     this.editingCategoria = null;
+  }
+
+  onDrop(event: CdkDragDrop<Categoria[]>) {
+    if (event.previousIndex === event.currentIndex) return;
+    moveItemInArray(this.categorias, event.previousIndex, event.currentIndex);
+    this.ordenCambiado = true;
+  }
+
+  guardarOrden() {
+    const items = this.categorias.map((cat, index) => ({
+      id: cat.id!,
+      orden: index
+    }));
+    this.categoriaService.reordenarCategorias(items).subscribe({
+      next: () => {
+        this.ordenCambiado = false;
+        alert('Orden guardado correctamente');
+      },
+      error: (error: any) => {
+        console.error('Error al guardar el orden:', error);
+        alert('Error al guardar el orden');
+      }
+    });
+  }
+
+  descartarOrden() {
+    this.cargarCategorias();
   }
 
   get categoriasFiltradas(): Categoria[] {

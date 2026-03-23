@@ -287,4 +287,17 @@ export class CategoriaService {
   deleteCategoria(id: number): Observable<any> {
     return this.deleteModulo(id);
   }
+
+  /**
+   * Reordenar categorías (módulos raíz)
+   * PUT /api/modulos/reordenar/batch
+   */
+  reordenarCategorias(items: { id: number; orden: number }[]): Observable<any> {
+    return this.http.put<any>(`${this.modulosUrl}/reordenar/batch`, { items }).pipe(
+      catchError(err => {
+        console.error('Error al reordenar categorías:', err);
+        throw err;
+      })
+    );
+  }
 }

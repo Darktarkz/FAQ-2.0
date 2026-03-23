@@ -11,7 +11,7 @@ class Modulo extends Model
     public $incrementing = true;
     protected $keyType = 'int';
 
-    protected $fillable = ['nombre', 'descripcion', 'idpadre', 'icono'];
+    protected $fillable = ['nombre', 'descripcion', 'idpadre', 'icono', 'orden'];
 
     public $timestamps = true;
 }

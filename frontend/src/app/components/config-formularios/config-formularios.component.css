@@ -545,6 +545,30 @@
     font-size: 12px;
 }
 
+/* Drag & Drop */
+.campo-personalizado.cdk-drag-preview {
+    box-shadow: 0 8px 24px rgba(101, 85, 143, 0.3);
+    border: 2px solid #65558F;
+    border-radius: 8px;
+    background: white;
+    opacity: 0.95;
+}
+
+.campo-personalizado.cdk-drag-placeholder {
+    background: #ede7f6;
+    border: 2px dashed #b39ddb;
+    border-radius: 8px;
+    opacity: 0.5;
+}
+
+.campo-personalizado.cdk-drag-animating {
+    transition: transform 200ms ease;
+}
+
+.campos-lista.cdk-drop-list-dragging .campo-personalizado:not(.cdk-drag-placeholder) {
+    transition: transform 200ms ease;
+}
+
 .campo-orden-btns {
     display: flex;
     flex-direction: column;
@@ -552,6 +576,11 @@
     gap: 2px;
     margin-right: 12px;
     flex-shrink: 0;
+    cursor: grab;
+}
+
+.campo-orden-btns:active {
+    cursor: grabbing;
 }
 
 .btn-orden {

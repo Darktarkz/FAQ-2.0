@@ -13,7 +13,7 @@ class FormularioCampoController extends Controller
     /**
      * Obtener todos los campos personalizados de un módulo
      */
-    public function getPorModulo($moduloId)
+    public function getPorModulo(Request $request, $moduloId)
     {
         try {
             \Log::info("Buscando campos para módulo: {$moduloId}");
@@ -28,8 +28,17 @@ class FormularioCampoController extends Controller
                 ]);
             }
 
-            $campos = $template->campos;
-            \Log::info("Template encontrado con {$campos->count()} campos para módulo: {$moduloId}");
+            // Filtrar directamente en BD (más confiable que PHP-side)
+            if ($request->has('incluir_ocultos')) {
+                $campos = $template->campos()->orderBy('orden')->get();
+            } else {
+                $campos = $template->campos()->where('visible', 1)->orderBy('orden')->get();
+            }
+
+            \Log::info("Template encontrado con {$campos->count()} campos para módulo: {$moduloId}", [
+                'incluir_ocultos' => $request->has('incluir_ocultos'),
+                'campos_visible' => $campos->pluck('visible', 'id')->toArray()
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -158,7 +167,8 @@ class FormularioCampoController extends Controller
 
         try {
             $campo = FormularioCampo::findOrFail($id);
-            $campo->update($request->only([
+            
+            $datos = $request->only([
                 'nombre_campo',
                 'etiqueta',
                 'tipo',
@@ -169,8 +179,34 @@ class FormularioCampoController extends Controller
                 'validacion',
                 'orden',
                 'tamano_columna',
-                'visible'
-            ]));
+            ]);
+            
+            // Manejar 'visible' CON DB::table directo para evitar que el cast boolean
+            // de Eloquent interfiera con el INSERT en MariaDB TINYINT
+            $visibleValue = null;
+            if ($request->exists('visible')) {
+                $visibleValue = filter_var($request->input('visible'), FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
+            }
+            
+            \Log::info("Actualizando campo ID: {$id}", [
+                'datos' => $datos,
+                'visible_nuevo' => $visibleValue,
+                'visible_antes' => $campo->getRawOriginal('visible'),
+            ]);
+            
+            // Actualizar campos normales con Eloquent
+            if (!empty($datos)) {
+                $campo->update($datos);
+            }
+            
+            // Actualizar visible directamente en BD (bypassa el cast boolean de Eloquent)
+            if ($visibleValue !== null) {
+                DB::table('formulario_campos')->where('id', $id)->update(['visible' => $visibleValue]);
+            }
+            
+            $campo->refresh();
+            
+            \Log::info("Campo actualizado ID: {$id}", ['visible_despues' => $campo->visible]);
 
             return response()->json([
                 'success' => true,

@@ -35,23 +35,25 @@ export class FormularioSoporteComponent implements OnInit, OnChanges {
   ) {}
 
   ngOnInit(): void {
-    this.cargarCamposPersonalizados();
+    if (this.moduloId) {
+      this.cargarCamposPersonalizados();
+    }
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['moduloId'] && !changes['moduloId'].firstChange && changes['moduloId'].currentValue) {
+    if (changes['moduloId'] && changes['moduloId'].currentValue) {
       this.cargarCamposPersonalizados();
     }
   }
 
   cargarCamposPersonalizados(): void {
+    if (!this.moduloId) return;
     this.cargandoFormulario = true;
     
     this.formularioCampoService.getPorModulo(this.moduloId).subscribe({
       next: (response) => {
         if (response.success && response.campos) {
-          // Solo campos visibles (visible !== false para soportar columna opcional/no migrada)
-          this.camposPersonalizados = response.campos.filter(campo => campo.visible !== false);
+          this.camposPersonalizados = response.campos;
           
           // Inicializar valores
           this.camposPersonalizados.forEach(campo => {

@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import { CategoriaService, Modulo } from '../../services/categoria.service';
 import { FormularioCampoService, FormularioCampo } from '../../services/formulario-campo.service';
 import { FormularioConfigService } from '../../services/formulario-config.service';
@@ -16,7 +17,7 @@ interface ModuloConfig {
 @Component({
   selector: 'app-config-formularios',
   standalone: true,
-  imports: [FormsModule, CommonModule],
+  imports: [FormsModule, CommonModule, DragDropModule],
   templateUrl: './config-formularios.component.html',
   styleUrls: ['./config-formularios.component.css']
 })
@@ -116,7 +117,7 @@ export class ConfigFormulariosComponent implements OnInit {
           // Cargar campos personalizados para cada módulo
           if (this.configuraciones.length > 0) {
             const camposObservables = this.configuraciones.map(config => 
-              this.formularioCampoService.getPorModulo(config.modulo_id).pipe(
+              this.formularioCampoService.getPorModulo(config.modulo_id, true).pipe(
                 map(resp => ({
                   modulo_id: config.modulo_id,
                   campos: resp.success ? (resp.campos || []) : []
@@ -240,7 +241,7 @@ export class ConfigFormulariosComponent implements OnInit {
   }
 
   cargarCamposPersonalizados(moduloConfig: ModuloConfig): void {
-    this.formularioCampoService.getPorModulo(moduloConfig.modulo_id).subscribe({
+    this.formularioCampoService.getPorModulo(moduloConfig.modulo_id, true).subscribe({
       next: (response) => {
         if (response.success) {
           moduloConfig.camposPersonalizados = response.campos || [];
@@ -323,7 +324,7 @@ export class ConfigFormulariosComponent implements OnInit {
       if (errores > 0) this.error = `${errores} campo(s) no se pudieron crear`;
     }
 
-    this.formularioCampoService.getPorModulo(moduloRef.modulo_id).subscribe({
+    this.formularioCampoService.getPorModulo(moduloRef.modulo_id, true).subscribe({
       next: (resp) => {
         if (resp.success) {
           moduloRef.camposPersonalizados = resp.campos || [];
@@ -398,7 +399,7 @@ export class ConfigFormulariosComponent implements OnInit {
             this.exito = 'Campo actualizado exitosamente';
             // Recargar campos antes de cerrar el modal
             console.log('Recargando campos para módulo después de actualizar:', moduloRef!.modulo_id);
-            this.formularioCampoService.getPorModulo(moduloRef!.modulo_id).subscribe({
+            this.formularioCampoService.getPorModulo(moduloRef!.modulo_id, true).subscribe({
               next: (resp) => {
                 console.log('Campos recargados después de actualizar:', resp);
                 if (resp.success) {
@@ -439,7 +440,7 @@ export class ConfigFormulariosComponent implements OnInit {
             this.exito = 'Campo creado exitosamente';
             // Recargar campos antes de cerrar el modal
             console.log('Recargando campos para módulo:', moduloRef!.modulo_id);
-            this.formularioCampoService.getPorModulo(moduloRef!.modulo_id).subscribe({
+            this.formularioCampoService.getPorModulo(moduloRef!.modulo_id, true).subscribe({
               next: (resp) => {
                 console.log('Campos recargados después de crear:', resp);
                 if (resp.success) {
@@ -481,7 +482,7 @@ export class ConfigFormulariosComponent implements OnInit {
           
           // Recargar campos después de eliminar
           console.log('Recargando campos para módulo después de eliminar:', moduloConfig.modulo_id);
-          this.formularioCampoService.getPorModulo(moduloConfig.modulo_id).subscribe({
+          this.formularioCampoService.getPorModulo(moduloConfig.modulo_id, true).subscribe({
             next: (resp) => {
               console.log('Campos recargados después de eliminar:', resp);
               if (resp.success) {
@@ -510,29 +511,58 @@ export class ConfigFormulariosComponent implements OnInit {
   }
 
   toggleVisibilidadCampo(moduloConfig: ModuloConfig, campo: FormularioCampo): void {
+    const estadoAnterior = campo.visible;
     const nuevoEstadoVisible = !campo.visible;
+    
+    // Actualizar UI inmediatamente (optimistic update)
+    campo.visible = nuevoEstadoVisible;
     
     this.formularioCampoService.actualizar(campo.id!, { visible: nuevoEstadoVisible }).subscribe({
       next: (response) => {
         if (response.success) {
-          campo.visible = nuevoEstadoVisible;
-          this.exito = `Campo ${nuevoEstadoVisible ? 'mostrado' : 'ocultado'} exitosamente`;
-          
-          // Actualizar la referencia del módulo para forzar detección de cambios
-          const index = this.configuraciones.findIndex(c => c.modulo_id === moduloConfig.modulo_id);
-          if (index !== -1) {
-            this.configuraciones[index] = { ...moduloConfig };
+          // Confirmar con el valor del backend si viene
+          if (response.campo && typeof response.campo.visible === 'boolean') {
+            campo.visible = response.campo.visible;
           }
-          
+          this.exito = `Campo ${campo.visible ? 'visible' : 'oculto'} exitosamente`;
           setTimeout(() => this.exito = '', 3000);
         } else {
+          // Revertir si no fue exitoso
+          campo.visible = estadoAnterior;
           this.error = response.message || 'Error al actualizar visibilidad';
+          setTimeout(() => this.error = '', 5000);
         }
       },
       error: (err) => {
+        // Revertir en caso de error
+        campo.visible = estadoAnterior;
         console.error('Error al actualizar visibilidad:', err);
         this.error = 'Error al actualizar visibilidad del campo';
+        setTimeout(() => this.error = '', 5000);
       }
+    });
+  }
+
+  onDropCampo(event: CdkDragDrop<FormularioCampo[]>, moduloConfig: ModuloConfig): void {
+    const campos = moduloConfig.camposPersonalizados;
+    if (!campos || event.previousIndex === event.currentIndex) return;
+
+    moveItemInArray(campos, event.previousIndex, event.currentIndex);
+
+    const ordenData = campos.map((c, i) => ({ id: c.id!, orden: i }));
+    this.formularioCampoService.reordenar(ordenData).subscribe({
+      next: (response) => {
+        if (response.success) {
+          moduloConfig.camposPersonalizados = [...campos];
+          const idx = this.configuraciones.findIndex(c => c.modulo_id === moduloConfig.modulo_id);
+          if (idx !== -1) {
+            this.configuraciones[idx] = { ...moduloConfig };
+          }
+        } else {
+          this.error = 'Error al reordenar campos';
+        }
+      },
+      error: () => this.error = 'Error al reordenar campos'
     });
   }
 

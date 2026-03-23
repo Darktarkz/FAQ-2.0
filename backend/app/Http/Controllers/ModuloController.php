@@ -16,8 +16,33 @@ class ModuloController extends Controller
      */
     public function index(): JsonResponse
     {
-        $modulos = Modulo::all();
+        $modulos = Modulo::orderBy('orden', 'asc')->orderBy('id', 'asc')->get();
         return response()->json($modulos, 200);
+    }
+
+    /**
+     * Reordenar módulos (categorías raíz)
+     * PUT /api/modulos/reordenar/batch
+     */
+    public function reordenar(Request $request): JsonResponse
+    {
+        if (!$request->user()->isAdmin()) {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        $validated = $request->validate([
+            'items' => 'required|array',
+            'items.*.id' => 'required|integer|exists:modulos,id',
+            'items.*.orden' => 'required|integer|min:0',
+        ]);
+
+        DB::transaction(function () use ($validated) {
+            foreach ($validated['items'] as $item) {
+                Modulo::where('id', $item['id'])->update(['orden' => $item['orden']]);
+            }
+        });
+
+        return response()->json(['message' => 'Orden actualizado correctamente'], 200);
     }
 
     /**

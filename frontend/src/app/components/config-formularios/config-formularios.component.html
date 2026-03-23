@@ -103,6 +103,9 @@
         <div
           *ngIf="moduloConfig.camposPersonalizados && moduloConfig.camposPersonalizados.length > 0"
           class="campos-lista"
+          cdkDropList
+          [cdkDropListData]="moduloConfig.camposPersonalizados"
+          (cdkDropListDropped)="onDropCampo($event, moduloConfig)"
         >
           <div
             *ngFor="
@@ -112,8 +115,9 @@
               let last = last
             "
             class="campo-personalizado"
+            cdkDrag
           >
-            <div class="campo-orden-btns">
+            <div class="campo-orden-btns" cdkDragHandle>
               <button
                 class="btn-orden btn-orden-up"
                 [disabled]="first"
