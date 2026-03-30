@@ -1,0 +1,403 @@
+/* ─── Layout general ─────────────────────────────────────────────────────── */
+.formulario-container {
+    max-width: 860px;
+    margin: 40px auto;
+    padding: 0 16px 60px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #2d2d2d;
+}
+
+.formulario-header {
+    background: linear-gradient(135deg, #39275c 0%, #5a3d8a 100%);
+    color: #fff;
+    padding: 32px 36px;
+    border-radius: 12px 12px 0 0;
+    margin-bottom: 0;
+}
+
+.formulario-header h1 {
+    margin: 0 0 8px;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.formulario-header p {
+    margin: 0;
+    opacity: 0.85;
+    font-size: 0.97rem;
+}
+
+form {
+    background: #fff;
+    border: 1px solid #e0d6f5;
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    padding: 32px 36px;
+    box-shadow: 0 4px 18px rgba(57, 39, 92, 0.08);
+}
+
+/* ─── Secciones ──────────────────────────────────────────────────────────── */
+.seccion {
+    margin-bottom: 36px;
+}
+
+.seccion-titulo {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #39275c;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e0d6f5;
+    margin-bottom: 20px;
+}
+
+.seccion-desc {
+    color: #666;
+    font-size: 0.9rem;
+    margin: -12px 0 16px;
+}
+
+/* ─── Grid ───────────────────────────────────────────────────────────────── */
+.grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+}
+
+@media (max-width: 620px) {
+    .grid-2 {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ─── Campo genérico ─────────────────────────────────────────────────────── */
+.campo {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.col-medio {
+    max-width: 400px;
+}
+
+.campo label {
+    font-size: 0.87rem;
+    font-weight: 600;
+    color: #39275c;
+}
+
+.campo input,
+.campo select,
+.campo textarea {
+    padding: 9px 12px;
+    border: 1.5px solid #ccc;
+    border-radius: 7px;
+    font-size: 0.95rem;
+    color: #2d2d2d;
+    background: #fafafa;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+}
+
+.campo input:focus,
+.campo select:focus,
+.campo textarea:focus {
+    border-color: #39275c;
+    box-shadow: 0 0 0 3px rgba(57, 39, 92, 0.12);
+    background: #fff;
+}
+
+.campo select:disabled {
+    background: #f0f0f0;
+    color: #999;
+    cursor: not-allowed;
+}
+
+.req {
+    color: #c0392b;
+}
+
+/* ─── Errores ────────────────────────────────────────────────────────────── */
+.campo-error input,
+.campo-error select,
+.campo-error textarea {
+    border-color: #c0392b;
+}
+
+.error-msg {
+    font-size: 0.8rem;
+    color: #c0392b;
+}
+
+/* ─── Cargo ──────────────────────────────────────────────────────────────── */
+.campo-cargo {
+    margin-top: 18px;
+}
+
+.label-cargo {
+    display: block;
+    font-size: 0.87rem;
+    font-weight: 600;
+    color: #39275c;
+    margin-bottom: 8px;
+}
+
+.radio-group {
+    display: flex;
+    gap: 24px;
+}
+
+.radio-label {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    cursor: pointer;
+    font-size: 0.95rem;
+}
+
+.radio-label input[type='radio'] {
+    accent-color: #39275c;
+    width: 17px;
+    height: 17px;
+}
+
+.campo-cargo-nombre {
+    margin-top: 14px;
+    max-width: 400px;
+}
+
+/* ─── Bloques de plataforma ──────────────────────────────────────────────── */
+.plataforma-bloque {
+    border: 1.5px solid #e0d6f5;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    overflow: hidden;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.plataforma-bloque.activa {
+    border-color: #39275c;
+    box-shadow: 0 2px 10px rgba(57, 39, 92, 0.1);
+}
+
+.plataforma-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    cursor: pointer;
+    background: #f7f4fc;
+    user-select: none;
+    transition: background 0.2s;
+}
+
+.plataforma-bloque.activa .plataforma-header {
+    background: #39275c;
+    color: #fff;
+}
+
+.plataforma-header input[type='checkbox'] {
+    accent-color: #fff;
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.plataforma-nombre {
+    font-weight: 700;
+    font-size: 0.97rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.plataforma-campos {
+    padding: 20px 18px;
+    background: #fff;
+    border-top: 1px solid #e0d6f5;
+    animation: slideFadeIn 0.22s ease;
+}
+
+@keyframes slideFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ─── File upload ────────────────────────────────────────────────────────── */
+.file-upload-area {
+    position: relative;
+    border: 2px dashed #c4b5e8;
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+    color: #777;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    background: #fafafa;
+    overflow: hidden;
+}
+
+.file-upload-area:hover {
+    border-color: #39275c;
+    background: #f3eeff;
+}
+
+.file-upload-area.tiene-archivo {
+    border-color: #27ae60;
+    background: #f0fff4;
+    color: #27ae60;
+}
+
+.file-upload-area input[type='file'] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+}
+
+.file-nombre {
+    font-weight: 600;
+}
+
+/* ─── Alertas ────────────────────────────────────────────────────────────── */
+.alerta-plataformas {
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 7px;
+    padding: 10px 14px;
+    font-size: 0.88rem;
+    color: #856404;
+    margin-bottom: 14px;
+}
+
+.alerta-error {
+    background: #fdecea;
+    border: 1px solid #e74c3c;
+    border-radius: 7px;
+    padding: 12px 16px;
+    font-size: 0.92rem;
+    color: #c0392b;
+    margin-bottom: 20px;
+}
+
+/* ─── Botón enviar ───────────────────────────────────────────────────────── */
+.acciones {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 8px;
+}
+
+.btn-enviar {
+    background: linear-gradient(135deg, #39275c 0%, #5a3d8a 100%);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 13px 36px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+}
+
+.btn-enviar:hover:not(:disabled) {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.btn-enviar:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+/* ─── Pantalla de éxito ──────────────────────────────────────────────────── */
+.exito-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 60vh;
+    padding: 40px 16px;
+}
+
+.exito-card {
+    background: #fff;
+    border: 1px solid #e0d6f5;
+    border-radius: 16px;
+    padding: 48px 40px;
+    text-align: center;
+    max-width: 460px;
+    box-shadow: 0 6px 24px rgba(57, 39, 92, 0.12);
+    animation: popIn 0.35s ease;
+}
+
+@keyframes popIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.exito-icono {
+    font-size: 3rem;
+    color: #27ae60;
+    background: #f0fff4;
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    border: 3px solid #27ae60;
+}
+
+.exito-card h2 {
+    color: #39275c;
+    font-size: 1.4rem;
+    margin-bottom: 10px;
+}
+
+.exito-card p {
+    color: #555;
+    margin-bottom: 6px;
+}
+
+.numero-caso {
+    font-size: 1.1rem;
+    color: #39275c;
+}
+
+.exito-nota {
+    font-size: 0.85rem;
+    color: #888;
+    margin-bottom: 28px !important;
+}
+
+.btn-nueva {
+    background: #39275c;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 28px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.btn-nueva:hover {
+    opacity: 0.85;
+}

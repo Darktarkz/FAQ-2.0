@@ -24,6 +24,7 @@ interface ApiResponse {
   campos?: FormularioCampo[];
   campo?: FormularioCampo;
   template_id?: number;
+  origen_modulo_id?: number;
   message?: string;
   errors?: any;
 }
@@ -37,18 +38,29 @@ export class FormularioCampoService {
   constructor(private http: HttpClient) {}
 
   /**
-   * Obtener campos de un módulo
-   * @param incluirOcultos true para incluir campos con visible=false (uso admin)
+   * Obtener campos de un módulo, con fallback pregunta → módulo.
+   * @param preguntaId si se proporciona, el backend busca primero el template exclusivo de esa pregunta
    */
-  getPorModulo(moduloId: number, incluirOcultos: boolean = false): Observable<ApiResponse> {
-    const params = incluirOcultos ? '?incluir_ocultos=1' : '';
-    return this.http.get<ApiResponse>(`${this.apiUrl}/modulo/${moduloId}${params}`);
+  getPorModulo(moduloId: number, incluirOcultos: boolean = false, preguntaId?: number): Observable<ApiResponse> {
+    const params = new URLSearchParams();
+    if (incluirOcultos) params.set('incluir_ocultos', '1');
+    if (preguntaId) params.set('pregunta_id', String(preguntaId));
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    return this.http.get<ApiResponse>(`${this.apiUrl}/modulo/${moduloId}${qs}`);
   }
 
   /**
-   * Crear un nuevo campo personalizado
+   * Obtener campos exclusivos de una pregunta (sin fallback, para el panel admin).
    */
-  crear(campo: Partial<FormularioCampo> & { modulo_id: number }): Observable<ApiResponse> {
+  getPorPregunta(preguntaId: number): Observable<ApiResponse> {
+    return this.http.get<ApiResponse>(`${this.apiUrl}/pregunta/${preguntaId}`);
+  }
+
+  /**
+   * Crear un nuevo campo personalizado.
+   * Requiere modulo_id O pregunta_id.
+   */
+  crear(campo: Partial<FormularioCampo> & { modulo_id?: number; pregunta_id?: number }): Observable<ApiResponse> {
     return this.http.post<ApiResponse>(this.apiUrl, campo);
   }
 

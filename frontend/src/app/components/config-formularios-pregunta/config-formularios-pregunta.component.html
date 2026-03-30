@@ -1,0 +1,363 @@
+<div class="config-container">
+  <div class="header-config">
+    <div class="header-icon">🎯</div>
+    <h2>Formularios por Pregunta Específica</h2>
+    <p class="subtitle">
+      Crea un formulario exclusivo para una pregunta. Cuando el usuario accede a soporte desde esa
+      pregunta, verá este formulario en lugar del formulario general del módulo.
+    </p>
+  </div>
+
+  <!-- Mensajes -->
+  <div *ngIf="error" class="alert alert-error">
+    {{ error }}
+    <button (click)="error = ''" class="btn-close">×</button>
+  </div>
+  <div *ngIf="exito" class="alert alert-success">
+    {{ exito }}
+    <button (click)="exito = ''" class="btn-close">×</button>
+  </div>
+
+  <!-- Pregunta seleccionada -->
+  <div *ngIf="preguntaSeleccionada" class="pregunta-activa">
+    <div class="pregunta-activa-header">
+      <div class="pregunta-activa-info">
+        <span class="pregunta-badge">🎯 Pregunta seleccionada</span>
+        <h3>{{ preguntaSeleccionada.pregunta_texto }}</h3>
+        <small *ngIf="preguntaSeleccionada.modulo_nombre">
+          Módulo: {{ preguntaSeleccionada.modulo_nombre }}
+        </small>
+      </div>
+      <button (click)="limpiarSeleccion()" class="btn btn-cambiar">🔄 Cambiar pregunta</button>
+    </div>
+
+    <!-- Campos de la pregunta -->
+    <div class="campos-section">
+      <div class="section-header">
+        <h4>📋 Campos exclusivos de esta pregunta</h4>
+        <button class="btn btn-add-campo" (click)="abrirModalAgregar()">+ Agregar Campo</button>
+      </div>
+
+      <div *ngIf="cargandoCampos" class="loading-state">
+        <div class="spinner"></div>
+        <p>Cargando campos...</p>
+      </div>
+
+      <div
+        *ngIf="!cargandoCampos && camposOrdenados.length > 0"
+        class="campos-lista"
+        cdkDropList
+        [cdkDropListData]="camposOrdenados"
+        (cdkDropListDropped)="onDropCampo($event)"
+      >
+        <div
+          *ngFor="let campo of camposOrdenados; let i = index; let first = first; let last = last"
+          class="campo-personalizado"
+          cdkDrag
+        >
+          <div class="campo-orden-btns" cdkDragHandle>
+            <button
+              class="btn-orden btn-orden-up"
+              [disabled]="first"
+              (click)="moverCampo(i, -1)"
+              title="Subir"
+            >
+              ▲
+            </button>
+            <span class="campo-orden-num">{{ i + 1 }}</span>
+            <button
+              class="btn-orden btn-orden-down"
+              [disabled]="last"
+              (click)="moverCampo(i, 1)"
+              title="Bajar"
+            >
+              ▼
+            </button>
+          </div>
+          <div class="campo-info">
+            <div class="campo-header-custom">
+              <strong>{{ campo.etiqueta }}</strong>
+              <span class="campo-tipo-badge">{{ campo.tipo }}</span>
+              <span *ngIf="campo.requerido" class="campo-requerido-badge">Requerido</span>
+              <span *ngIf="!campo.visible" class="campo-oculto-badge" title="Campo oculto"
+                >👁️‍🗨️ Oculto</span
+              >
+            </div>
+            <div class="campo-detalles">
+              <small *ngIf="campo.placeholder">Placeholder: {{ campo.placeholder }}</small>
+              <small *ngIf="campo.descripcion_ayuda">Ayuda: {{ campo.descripcion_ayuda }}</small>
+              <small *ngIf="campo.opciones && campo.opciones.length > 0">
+                Opciones: {{ campo.opciones.join(', ') }}
+              </small>
+            </div>
+          </div>
+          <div class="campo-acciones">
+            <button
+              class="btn-icon btn-visibility-icon"
+              (click)="toggleVisibilidad(campo)"
+              [title]="campo.visible ? 'Ocultar campo' : 'Mostrar campo'"
+            >
+              {{ campo.visible ? '👁️' : '👁️‍🗨️' }}
+            </button>
+            <button class="btn-icon btn-edit-icon" (click)="abrirModalEditar(campo)" title="Editar">
+              ✏️
+            </button>
+            <button
+              class="btn-icon btn-delete-icon"
+              (click)="eliminarCampo(campo)"
+              title="Eliminar"
+            >
+              🗑️
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="!cargandoCampos && camposOrdenados.length === 0" class="campos-empty">
+        <p>
+          Esta pregunta no tiene campos específicos aún. Haz clic en "+ Agregar Campo" para crear el
+          primer campo.
+        </p>
+        <p class="campos-empty-nota">
+          ℹ️ Mientras no tenga campos, el formulario de soporte usará los campos del módulo al que
+          pertenece la pregunta.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Buscador (visible cuando no hay pregunta seleccionada) -->
+  <div *ngIf="!preguntaSeleccionada" class="search-section">
+    <div class="search-container">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input
+          type="text"
+          [(ngModel)]="terminoBusqueda"
+          (ngModelChange)="onBusquedaChange($event)"
+          placeholder="Busca una pregunta para personalizar su formulario..."
+          class="search-input"
+          autocomplete="off"
+        />
+        <button
+          *ngIf="terminoBusqueda"
+          (click)="terminoBusqueda = ''; resultadosBusqueda = []"
+          class="btn-clear-search"
+        >
+          ×
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="cargando" class="loading-state">
+      <div class="spinner"></div>
+      <p>Buscando preguntas...</p>
+    </div>
+
+    <div *ngIf="!cargando && !terminoBusqueda" class="empty-search-state">
+      <div class="empty-icon">🎯</div>
+      <h3>Busca la pregunta que deseas personalizar</h3>
+      <p>Escribe parte del texto de la pregunta para encontrarla</p>
+    </div>
+
+    <div
+      *ngIf="!cargando && terminoBusqueda && resultadosBusqueda.length === 0"
+      class="no-results-state"
+    >
+      <div class="empty-icon">🔍</div>
+      <h3>Sin resultados</h3>
+      <p>No se encontraron preguntas que coincidan con "{{ terminoBusqueda }}"</p>
+    </div>
+
+    <div *ngIf="resultadosBusqueda.length > 0" class="resultados-lista">
+      <p class="resultados-count">{{ resultadosBusqueda.length }} pregunta(s) encontrada(s)</p>
+      <div
+        *ngFor="let pregunta of resultadosBusqueda"
+        class="resultado-item"
+        (click)="seleccionarPregunta(pregunta)"
+      >
+        <div class="resultado-texto">{{ pregunta.Pregunta }}</div>
+        <div class="resultado-meta">
+          <span *ngIf="pregunta.Modulo" class="resultado-modulo">{{ pregunta.Modulo }}</span>
+          <span *ngIf="pregunta.Submodulo" class="resultado-submodulo"
+            >/ {{ pregunta.Submodulo }}</span
+          >
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para Agregar/Editar Campo -->
+<div *ngIf="mostrarModalCampo" class="modal-overlay" (click)="cerrarModal()">
+  <div
+    class="modal-content"
+    [class.modal-campo]="campoEditando || plantillaSeleccionada"
+    [class.modal-campo-con-plantillas]="!campoEditando && !plantillaSeleccionada"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="modal-header">
+      <h3>
+        {{
+          campoEditando
+            ? 'Editar Campo'
+            : !plantillaSeleccionada
+              ? 'Agregar Campos'
+              : 'Configurar Campo'
+        }}
+      </h3>
+      <button class="btn-close" (click)="cerrarModal()">×</button>
+    </div>
+
+    <!-- PASO 1: Selección múltiple de plantillas -->
+    <div *ngIf="!campoEditando && !plantillaSeleccionada" class="modal-body plantillas-body">
+      <p class="plantillas-instruccion">Marca los campos que deseas agregar:</p>
+      <p class="plantillas-counter">{{ plantillasSeleccionadas.size }} campo(s) seleccionado(s)</p>
+      <div class="plantillas-grid">
+        <div
+          *ngFor="let plantilla of camposPredefinidos"
+          class="plantilla-card"
+          [class.plantilla-seleccionada]="plantillasSeleccionadas.has(plantilla.key)"
+          (click)="togglePlantilla(plantilla)"
+        >
+          <div class="plantilla-checkbox">
+            <input
+              type="checkbox"
+              [checked]="plantillasSeleccionadas.has(plantilla.key)"
+              (click)="$event.stopPropagation(); togglePlantilla(plantilla)"
+            />
+          </div>
+          <span class="plantilla-icono">{{ plantilla.icono }}</span>
+          <div class="plantilla-info">
+            <strong>{{ plantilla.etiqueta }}</strong>
+            <small>{{ plantilla.tipo }}</small>
+          </div>
+        </div>
+      </div>
+      <div class="plantillas-footer">
+        <div class="plantillas-footer-info">
+          <strong>{{ plantillasSeleccionadas.size }}</strong> de
+          {{ camposPredefinidos.length }} seleccionados
+        </div>
+        <div class="plantillas-footer-actions">
+          <button class="btn btn-personalizado-footer" (click)="seleccionarPersonalizado()">
+            ✨ Crear Personalizado
+          </button>
+          <button
+            class="btn btn-agregar-seleccionados"
+            [disabled]="plantillasSeleccionadas.size === 0 || guardandoPlantillas"
+            (click)="guardarSeleccionados()"
+          >
+            {{
+              guardandoPlantillas
+                ? 'Guardando...'
+                : 'Agregar ' + plantillasSeleccionadas.size + ' Campo(s)'
+            }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PASO 2: Formulario de campo -->
+    <div *ngIf="campoEditando || plantillaSeleccionada" class="modal-body">
+      <div *ngIf="!campoEditando" class="plantilla-volver" (click)="plantillaSeleccionada = null">
+        ← Volver a selección
+      </div>
+      <form (ngSubmit)="guardarCampo()">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nombre del Campo *</label>
+            <input
+              type="text"
+              [(ngModel)]="nuevoCampo.nombre_campo"
+              name="nombre_campo"
+              placeholder="nombre_sin_espacios"
+              required
+            />
+            <small>Nombre técnico (sin espacios)</small>
+          </div>
+          <div class="form-group">
+            <label>Etiqueta Visible *</label>
+            <input
+              type="text"
+              [(ngModel)]="nuevoCampo.etiqueta"
+              name="etiqueta"
+              placeholder="Etiqueta que verá el usuario"
+              required
+            />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tipo de Campo *</label>
+            <select [(ngModel)]="nuevoCampo.tipo" name="tipo" required>
+              <option *ngFor="let tipo of tiposCampo" [value]="tipo.valor">{{ tipo.label }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Tamaño de Columna (1-12)</label>
+            <input
+              type="number"
+              [(ngModel)]="nuevoCampo.tamano_columna"
+              name="tamano_columna"
+              min="1"
+              max="12"
+            />
+            <small>12 = ancho completo, 6 = mitad</small>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Placeholder</label>
+          <input
+            type="text"
+            [(ngModel)]="nuevoCampo.placeholder"
+            name="placeholder"
+            placeholder="Texto de ejemplo en el campo"
+          />
+        </div>
+        <div class="form-group">
+          <label>Descripción de Ayuda</label>
+          <textarea
+            [(ngModel)]="nuevoCampo.descripcion_ayuda"
+            name="descripcion_ayuda"
+            rows="2"
+            placeholder="Texto de ayuda debajo del campo"
+          ></textarea>
+        </div>
+        <div
+          *ngIf="['select', 'radio', 'checkbox'].includes(nuevoCampo.tipo || '')"
+          class="form-group"
+        >
+          <label>Opciones</label>
+          <div
+            *ngFor="let opcion of nuevoCampo.opciones; let i = index; trackBy: trackByIndex"
+            class="opcion-row"
+          >
+            <input
+              type="text"
+              [(ngModel)]="nuevoCampo.opciones![i]"
+              [name]="'opcion_' + i"
+              placeholder="Opción {{ i + 1 }}"
+            />
+            <button type="button" class="btn-remove-opcion" (click)="eliminarOpcion(i)">×</button>
+          </div>
+          <button type="button" class="btn btn-add-opcion" (click)="agregarOpcion()">
+            + Agregar Opción
+          </button>
+        </div>
+        <div class="form-check">
+          <label>
+            <input type="checkbox" [(ngModel)]="nuevoCampo.requerido" name="requerido" />
+            Campo Requerido
+          </label>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">
+            {{ campoEditando ? 'Actualizar' : 'Crear Campo' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

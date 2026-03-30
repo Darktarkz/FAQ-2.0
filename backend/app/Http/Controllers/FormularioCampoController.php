@@ -11,20 +11,50 @@ use Illuminate\Support\Facades\DB;
 class FormularioCampoController extends Controller
 {
     /**
-     * Obtener todos los campos personalizados de un módulo
+     * Obtener campos personalizados de un módulo.
+     * Si se pasa ?pregunta_id=X, busca primero el template específico de esa pregunta;
+     * si no existe, cae al template del módulo (fallback).
      */
     public function getPorModulo(Request $request, $moduloId)
     {
         try {
             \Log::info("Buscando campos para módulo: {$moduloId}");
-            
-            $template = FormularioTemplate::porModulo($moduloId);
-            
+
+            $template = null;
+            $origenTemplate = 'modulo';
+
+            // 1. Si viene pregunta_id, buscar template exclusivo de esa pregunta
+            if ($request->filled('pregunta_id')) {
+                $template = FormularioTemplate::porPregunta($request->input('pregunta_id'));
+                if ($template) {
+                    // Solo usar si tiene al menos un campo visible; si no, hacer fallback al módulo
+                    $tieneCamposVisibles = $template->campos()->where('visible', 1)->exists();
+                    if ($tieneCamposVisibles) {
+                        $origenTemplate = 'pregunta';
+                    } else {
+                        $template = null; // Fallback al módulo
+                    }
+                }
+            }
+
+            // 2. Fallback con herencia jerárquica (sube por idpadre hasta encontrar template)
+            $origenModuloId = null;
+            if (!$template) {
+                $resultado = FormularioTemplate::porModuloConHerencia((int) $moduloId);
+                $template = $resultado['template'];
+                $origenModuloId = $resultado['origen_modulo_id'];
+            } else {
+                // Template encontrado vía pregunta: el origen es el propio módulo
+                $origenModuloId = (int) $moduloId;
+            }
+
             if (!$template) {
                 \Log::info("No se encontró template para módulo: {$moduloId}");
                 return response()->json([
-                    'success' => true,
-                    'campos' => []
+                    'success'          => true,
+                    'campos'           => [],
+                    'origen_template'  => null,
+                    'origen_modulo_id' => null,
                 ]);
             }
 
@@ -35,15 +65,17 @@ class FormularioCampoController extends Controller
                 $campos = $template->campos()->where('visible', 1)->orderBy('orden')->get();
             }
 
-            \Log::info("Template encontrado con {$campos->count()} campos para módulo: {$moduloId}", [
+            \Log::info("Template encontrado ({$origenTemplate}) con {$campos->count()} campos para módulo: {$moduloId}", [
                 'incluir_ocultos' => $request->has('incluir_ocultos'),
                 'campos_visible' => $campos->pluck('visible', 'id')->toArray()
             ]);
 
             return response()->json([
-                'success' => true,
-                'template_id' => $template->id,
-                'campos' => $campos
+                'success'          => true,
+                'template_id'      => $template->id,
+                'origen_template'  => $origenTemplate,
+                'origen_modulo_id' => $origenModuloId,
+                'campos'           => $campos
             ]);
         } catch (\Exception $e) {
             \Log::error("Error al obtener campos para módulo {$moduloId}: " . $e->getMessage());
@@ -55,12 +87,45 @@ class FormularioCampoController extends Controller
     }
 
     /**
+     * Obtener campos de una pregunta específica (uso admin).
+     * Devuelve solo el template exclusivo de esa pregunta (sin fallback).
+     */
+    public function getPorPregunta(Request $request, $preguntaId)
+    {
+        try {
+            $template = FormularioTemplate::porPregunta($preguntaId);
+
+            if (!$template) {
+                return response()->json([
+                    'success' => true,
+                    'template_id' => null,
+                    'campos' => []
+                ]);
+            }
+
+            $campos = $template->campos()->orderBy('orden')->get();
+
+            return response()->json([
+                'success' => true,
+                'template_id' => $template->id,
+                'campos' => $campos
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Crear un nuevo campo personalizado
      */
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'modulo_id' => 'required|integer|exists:modulos,id',
+            'modulo_id' => 'nullable|integer|exists:modulos,id',
+            'pregunta_id' => 'nullable|integer',
             'nombre_campo' => 'required|string|max:255',
             'etiqueta' => 'required|string|max:255',
             'tipo' => 'required|in:text,email,tel,number,date,select,textarea,file,checkbox,radio',
@@ -81,23 +146,50 @@ class FormularioCampoController extends Controller
             ], 422);
         }
 
+        // Requiere modulo_id O pregunta_id
+        if (!$request->filled('modulo_id') && !$request->filled('pregunta_id')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Se requiere modulo_id o pregunta_id'
+            ], 422);
+        }
+
         try {
             DB::beginTransaction();
 
-            // Buscar o crear template para este módulo
-            $template = FormularioTemplate::porModulo($request->modulo_id);
-            
-            if (!$template) {
-                \Log::info("Creando nuevo template para módulo: {$request->modulo_id}");
-                $template = FormularioTemplate::create([
-                    'nombre' => 'Formulario Módulo ' . $request->modulo_id,
-                    'descripcion' => 'Formulario personalizado',
-                    'modulos_asignados' => [(int) $request->modulo_id], // Asegurar que sea entero
-                    'activo' => true
-                ]);
-                \Log::info("Template creado con ID: {$template->id}, módulos: " . json_encode($template->modulos_asignados));
+            $template = null;
+
+            // Si se proporciona pregunta_id, buscar/crear template de pregunta
+            if ($request->filled('pregunta_id')) {
+                $template = FormularioTemplate::porPregunta($request->pregunta_id);
+                if (!$template) {
+                    \Log::info("Creando nuevo template para pregunta: {$request->pregunta_id}");
+                    $template = FormularioTemplate::create([
+                        'nombre' => 'Formulario Pregunta ' . $request->pregunta_id,
+                        'descripcion' => 'Formulario específico de pregunta',
+                        'modulos_asignados' => [],
+                        'pregunta_id' => (int) $request->pregunta_id,
+                        'activo' => true
+                    ]);
+                    \Log::info("Template de pregunta creado con ID: {$template->id}");
+                } else {
+                    \Log::info("Template de pregunta existente encontrado con ID: {$template->id}");
+                }
             } else {
-                \Log::info("Template existente encontrado con ID: {$template->id}");
+                // Buscar o crear template para este módulo
+                $template = FormularioTemplate::porModulo($request->modulo_id);
+                if (!$template) {
+                    \Log::info("Creando nuevo template para módulo: {$request->modulo_id}");
+                    $template = FormularioTemplate::create([
+                        'nombre' => 'Formulario Módulo ' . $request->modulo_id,
+                        'descripcion' => 'Formulario personalizado',
+                        'modulos_asignados' => [(int) $request->modulo_id],
+                        'activo' => true
+                    ]);
+                    \Log::info("Template creado con ID: {$template->id}, módulos: " . json_encode($template->modulos_asignados));
+                } else {
+                    \Log::info("Template existente encontrado con ID: {$template->id}");
+                }
             }
 
             // Si no se proporciona orden, obtener el siguiente disponible

@@ -1,0 +1,362 @@
+<!-- ─── PANTALLA DE ÉXITO ──────────────────────────────────────────────── -->
+<div *ngIf="enviado" class="exito-container">
+  <div class="exito-card">
+    <div class="exito-icono">✓</div>
+    <h2>¡Solicitud enviada exitosamente!</h2>
+    <p>Tu solicitud de acceso ha sido registrada.</p>
+    <p class="numero-caso">
+      N.° de caso: <strong>{{ numeroCaso }}</strong>
+    </p>
+    <p class="exito-nota">El equipo de soporte procesará tu solicitud a la brevedad.</p>
+    <button class="btn-nueva" (click)="nuevaSolicitud()">Realizar otra solicitud</button>
+  </div>
+</div>
+
+<!-- ─── FORMULARIO ────────────────────────────────────────────────────── -->
+<div *ngIf="!enviado" class="formulario-container">
+  <div class="formulario-header">
+    <h1>Formulario de Solicitud de Acceso a Plataformas</h1>
+    <p>Complete los datos y seleccione las plataformas a las que requiere acceso.</p>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+    <!-- ═══ SECCIÓN 1: DATOS PERSONALES ════════════════════════════════ -->
+    <section class="seccion">
+      <h2 class="seccion-titulo">Datos del solicitante</h2>
+
+      <div class="grid-2">
+        <!-- Nombre completo -->
+        <div class="campo" [class.campo-error]="campoInvalido('nombre_completo')">
+          <label for="nombre_completo">Nombre completo <span class="req">*</span></label>
+          <input
+            id="nombre_completo"
+            type="text"
+            formControlName="nombre_completo"
+            placeholder="Ej: María García López"
+          />
+          <span class="error-msg" *ngIf="campoInvalido('nombre_completo')">
+            El nombre completo es obligatorio.
+          </span>
+        </div>
+
+        <!-- Correo -->
+        <div class="campo" [class.campo-error]="campoInvalido('correo')">
+          <label for="correo">Correo electrónico <span class="req">*</span></label>
+          <input
+            id="correo"
+            type="email"
+            formControlName="correo"
+            placeholder="usuario@entidad.gov.co"
+          />
+          <span class="error-msg" *ngIf="campoInvalido('correo')"> Ingrese un correo válido. </span>
+        </div>
+
+        <!-- Tipo documento -->
+        <div class="campo" [class.campo-error]="campoInvalido('tipo_documento')">
+          <label for="tipo_documento">Tipo de documento <span class="req">*</span></label>
+          <select id="tipo_documento" formControlName="tipo_documento">
+            <option value="">— Seleccione —</option>
+            <option value="CC">Cédula de Ciudadanía (CC)</option>
+            <option value="CE">Cédula de Extranjería (CE)</option>
+            <option value="TI">Tarjeta de Identidad (TI)</option>
+            <option value="Pasaporte">Pasaporte</option>
+            <option value="NIT">NIT</option>
+          </select>
+          <span class="error-msg" *ngIf="campoInvalido('tipo_documento')">
+            Seleccione el tipo de documento.
+          </span>
+        </div>
+
+        <!-- Número documento -->
+        <div class="campo" [class.campo-error]="campoInvalido('numero_documento')">
+          <label for="numero_documento">Número de documento <span class="req">*</span></label>
+          <input
+            id="numero_documento"
+            type="text"
+            formControlName="numero_documento"
+            placeholder="Ej: 1234567890"
+          />
+          <span class="error-msg" *ngIf="campoInvalido('numero_documento')">
+            El número de documento es obligatorio.
+          </span>
+        </div>
+
+        <!-- Usuario de red -->
+        <div class="campo" [class.campo-error]="campoInvalido('usuario_red')">
+          <label for="usuario_red">Usuario de red <span class="req">*</span></label>
+          <input
+            id="usuario_red"
+            type="text"
+            formControlName="usuario_red"
+            placeholder="Ej: mgarcia"
+          />
+          <span class="error-msg" *ngIf="campoInvalido('usuario_red')">
+            El usuario de red es obligatorio.
+          </span>
+        </div>
+
+        <!-- Dependencia -->
+        <div class="campo" [class.campo-error]="campoInvalido('dependencia_id')">
+          <label for="dependencia_id">Dependencia <span class="req">*</span></label>
+          <select
+            id="dependencia_id"
+            formControlName="dependencia_id"
+            [disabled]="cargandoDependencias"
+          >
+            <option value="">
+              {{
+                cargandoDependencias ? 'Cargando dependencias...' : '— Seleccione su dependencia —'
+              }}
+            </option>
+            <option *ngFor="let dep of dependencias" [value]="dep.id">{{ dep.nombre }}</option>
+          </select>
+          <span class="error-msg" *ngIf="campoInvalido('dependencia_id')">
+            Seleccione su dependencia.
+          </span>
+        </div>
+      </div>
+
+      <!-- Cargo -->
+      <div class="campo-cargo">
+        <label class="label-cargo">Cargo <span class="req">*</span></label>
+        <div class="radio-group">
+          <label class="radio-label">
+            <input type="radio" formControlName="cargo_tipo" value="contratista" />
+            <span>Contratista</span>
+          </label>
+          <label class="radio-label">
+            <input type="radio" formControlName="cargo_tipo" value="funcionario" />
+            <span>Funcionario</span>
+          </label>
+        </div>
+        <span class="error-msg" *ngIf="campoInvalido('cargo_tipo')">
+          Seleccione el tipo de cargo.
+        </span>
+
+        <!-- Campo cargo cuando es funcionario -->
+        <div
+          class="campo campo-cargo-nombre"
+          *ngIf="esFuncionario()"
+          [class.campo-error]="campoInvalido('cargo_nombre')"
+        >
+          <label for="cargo_nombre">Nombre del cargo <span class="req">*</span></label>
+          <input
+            id="cargo_nombre"
+            type="text"
+            formControlName="cargo_nombre"
+            placeholder="Ej: Profesional Universitario"
+          />
+          <span class="error-msg" *ngIf="campoInvalido('cargo_nombre')">
+            Ingrese el nombre del cargo.
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ SECCIÓN 2: SELECCIÓN DE PLATAFORMAS ════════════════════════ -->
+    <section class="seccion">
+      <h2 class="seccion-titulo">Plataformas requeridas</h2>
+      <p class="seccion-desc">
+        Seleccione todas las plataformas a las que necesita acceso y complete la información de cada
+        una.
+      </p>
+
+      <!-- Advertencia si no hay ninguna seleccionada y se intentó enviar -->
+      <div class="alerta-plataformas" *ngIf="form.touched && !algunaPlataformaSeleccionada()">
+        Debe seleccionar al menos una plataforma.
+      </div>
+
+      <!-- ─── SIF ──────────────────────────────────────────────────── -->
+      <div class="plataforma-bloque" [class.activa]="plataformaActiva('sif')">
+        <label class="plataforma-header">
+          <input type="checkbox" formControlName="plataforma_sif" />
+          <span class="plataforma-nombre">SIF</span>
+        </label>
+
+        <div class="plataforma-campos" *ngIf="plataformaActiva('sif')">
+          <div class="grid-2">
+            <div class="campo" [class.campo-error]="campoInvalido('sif_programa_sfa')">
+              <label for="sif_programa_sfa">Programa de la SFA <span class="req">*</span></label>
+              <input
+                id="sif_programa_sfa"
+                type="text"
+                formControlName="sif_programa_sfa"
+                placeholder="Ingrese el programa de la SFA"
+              />
+              <span class="error-msg" *ngIf="campoInvalido('sif_programa_sfa')">
+                Este campo es obligatorio.
+              </span>
+            </div>
+            <div class="campo" [class.campo-error]="campoInvalido('sif_rol_desempena')">
+              <label for="sif_rol_desempena">Rol que desempeña <span class="req">*</span></label>
+              <input
+                id="sif_rol_desempena"
+                type="text"
+                formControlName="sif_rol_desempena"
+                placeholder="Ingrese el rol que desempeña"
+              />
+              <span class="error-msg" *ngIf="campoInvalido('sif_rol_desempena')">
+                Este campo es obligatorio.
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── ORFEO ─────────────────────────────────────────────────── -->
+      <div class="plataforma-bloque" [class.activa]="plataformaActiva('orfeo')">
+        <label class="plataforma-header">
+          <input type="checkbox" formControlName="plataforma_orfeo" />
+          <span class="plataforma-nombre">ORFEO</span>
+        </label>
+
+        <div class="plataforma-campos" *ngIf="plataformaActiva('orfeo')">
+          <div class="campo">
+            <label>Firma <span class="req">*</span></label>
+            <div class="file-upload-area" [class.tiene-archivo]="orfeoFirma">
+              <input type="file" accept="image/*,.pdf" (change)="onOrfeoFirmaChange($event)" />
+              <span *ngIf="!orfeoFirma">📎 Haga clic o arrastre su firma aquí</span>
+              <span *ngIf="orfeoFirma" class="file-nombre">✓ {{ orfeoFirma.name }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── CONTRATACIÓN ──────────────────────────────────────────── -->
+      <div class="plataforma-bloque" [class.activa]="plataformaActiva('contratacion')">
+        <label class="plataforma-header">
+          <input type="checkbox" formControlName="plataforma_contratacion" />
+          <span class="plataforma-nombre">CONTRATACIÓN</span>
+        </label>
+
+        <div class="plataforma-campos" *ngIf="plataformaActiva('contratacion')">
+          <div class="grid-2">
+            <div class="campo">
+              <label>Firma</label>
+              <div class="file-upload-area" [class.tiene-archivo]="contratacionFirma">
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  (change)="onContratacionFirmaChange($event)"
+                />
+                <span *ngIf="!contratacionFirma">📎 Haga clic o arrastre su firma aquí</span>
+                <span *ngIf="contratacionFirma" class="file-nombre"
+                  >✓ {{ contratacionFirma.name }}</span
+                >
+              </div>
+            </div>
+            <div class="campo" [class.campo-error]="campoInvalido('contratacion_rol_acceso')">
+              <label for="contratacion_rol_acceso">Rol de acceso <span class="req">*</span></label>
+              <select id="contratacion_rol_acceso" formControlName="contratacion_rol_acceso">
+                <option value="">— Seleccione el rol —</option>
+                <option *ngFor="let rol of rolesContratacion" [value]="rol">{{ rol }}</option>
+              </select>
+              <span class="error-msg" *ngIf="campoInvalido('contratacion_rol_acceso')">
+                Seleccione el rol de acceso.
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── CAJA MENOR ─────────────────────────────────────────────── -->
+      <div class="plataforma-bloque" [class.activa]="plataformaActiva('caja_menor')">
+        <label class="plataforma-header">
+          <input type="checkbox" formControlName="plataforma_caja_menor" />
+          <span class="plataforma-nombre">CAJA MENOR</span>
+        </label>
+
+        <div class="plataforma-campos" *ngIf="plataformaActiva('caja_menor')">
+          <div class="campo col-medio" [class.campo-error]="campoInvalido('caja_menor_rol_acceso')">
+            <label for="caja_menor_rol_acceso">Rol de acceso <span class="req">*</span></label>
+            <select id="caja_menor_rol_acceso" formControlName="caja_menor_rol_acceso">
+              <option value="">— Seleccione el rol —</option>
+              <option *ngFor="let rol of rolesCajaMenor" [value]="rol">{{ rol }}</option>
+            </select>
+            <span class="error-msg" *ngIf="campoInvalido('caja_menor_rol_acceso')">
+              Seleccione el rol de acceso.
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── SICAPITAL ──────────────────────────────────────────────── -->
+      <div class="plataforma-bloque" [class.activa]="plataformaActiva('sicapital')">
+        <label class="plataforma-header">
+          <input type="checkbox" formControlName="plataforma_sicapital" />
+          <span class="plataforma-nombre">SICAPITAL</span>
+        </label>
+
+        <div class="plataforma-campos" *ngIf="plataformaActiva('sicapital')">
+          <div class="campo col-medio" [class.campo-error]="campoInvalido('sicapital_modulo')">
+            <label for="sicapital_modulo">Módulo <span class="req">*</span></label>
+            <select id="sicapital_modulo" formControlName="sicapital_modulo">
+              <option value="">— Seleccione el módulo —</option>
+              <option *ngFor="let mod of modulosSicapital" [value]="mod">{{ mod }}</option>
+            </select>
+            <span class="error-msg" *ngIf="campoInvalido('sicapital_modulo')">
+              Seleccione el módulo.
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── PANDORA ────────────────────────────────────────────────── -->
+      <div class="plataforma-bloque" [class.activa]="plataformaActiva('pandora')">
+        <label class="plataforma-header">
+          <input type="checkbox" formControlName="plataforma_pandora" />
+          <span class="plataforma-nombre">PANDORA</span>
+        </label>
+
+        <div class="plataforma-campos" *ngIf="plataformaActiva('pandora')">
+          <div class="grid-2">
+            <!-- Módulo PANDORA -->
+            <div class="campo" [class.campo-error]="campoInvalido('pandora_modulo')">
+              <label for="pandora_modulo">Módulo <span class="req">*</span></label>
+              <select id="pandora_modulo" formControlName="pandora_modulo">
+                <option value="">— Seleccione el módulo —</option>
+                <option *ngFor="let mod of pandoraModulos" [value]="mod">{{ mod }}</option>
+              </select>
+              <span class="error-msg" *ngIf="campoInvalido('pandora_modulo')">
+                Seleccione el módulo.
+              </span>
+            </div>
+
+            <!-- Rol PANDORA (se habilita al seleccionar módulo) -->
+            <div class="campo" [class.campo-error]="campoInvalido('pandora_rol')">
+              <label for="pandora_rol">Rol <span class="req">*</span></label>
+              <select
+                id="pandora_rol"
+                formControlName="pandora_rol"
+                [attr.disabled]="pandoraRolesDisponibles.length === 0 ? true : null"
+              >
+                <option value="">
+                  {{
+                    pandoraRolesDisponibles.length === 0
+                      ? '— Primero seleccione un módulo —'
+                      : '— Seleccione el rol —'
+                  }}
+                </option>
+                <option *ngFor="let rol of pandoraRolesDisponibles" [value]="rol">{{ rol }}</option>
+              </select>
+              <span class="error-msg" *ngIf="campoInvalido('pandora_rol')">
+                Seleccione el rol.
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ ERROR GENERAL ══════════════════════════════════════════════ -->
+    <div class="alerta-error" *ngIf="errorEnvio">⚠️ {{ errorEnvio }}</div>
+
+    <!-- ═══ BOTÓN ENVIAR ═══════════════════════════════════════════════ -->
+    <div class="acciones">
+      <button type="submit" class="btn-enviar" [disabled]="enviando">
+        <span *ngIf="!enviando">Enviar solicitud</span>
+        <span *ngIf="enviando" class="spinner-texto">⏳ Enviando...</span>
+      </button>
+    </div>
+  </form>
+</div>

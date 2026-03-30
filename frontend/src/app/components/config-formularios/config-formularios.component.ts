@@ -5,12 +5,14 @@ import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-
 import { CategoriaService, Modulo } from '../../services/categoria.service';
 import { FormularioCampoService, FormularioCampo } from '../../services/formulario-campo.service';
 import { FormularioConfigService } from '../../services/formulario-config.service';
+import { FormularioTemplateService, FormularioTemplate } from '../../services/formulario-template.service';
 import { forkJoin, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 
 interface ModuloConfig {
   modulo_id: number;
   modulo_nombre: string;
+  origenModuloId?: number;
   camposPersonalizados?: FormularioCampo[];
 }
 
@@ -25,6 +27,7 @@ export class ConfigFormulariosComponent implements OnInit {
   configuraciones: ModuloConfig[] = [];
   configuracionesFiltradas: ModuloConfig[] = [];
   modulosCompletos: Modulo[] = [];
+  templates: FormularioTemplate[] = [];
   terminoBusqueda: string = '';
   cargando: boolean = false;
   error: string = '';
@@ -80,18 +83,38 @@ export class ConfigFormulariosComponent implements OnInit {
   constructor(
     private categoriaService: CategoriaService,
     private formularioCampoService: FormularioCampoService,
-    private formularioConfigService: FormularioConfigService
+    private formularioConfigService: FormularioConfigService,
+    private formularioTemplateService: FormularioTemplateService
   ) {}
 
   ngOnInit(): void {
     this.cargarModulos();
-    // No cargar formularios hasta que el usuario busque
+    this.cargarTemplates();
+  }
+
+  cargarTemplates(): void {
+    this.formularioTemplateService.getAll().subscribe({
+      next: (r) => {
+        if (r.success) {
+          this.templates = r.formularios || [];
+          // Re-filtrar si ya hay un término de búsqueda activo
+          if (this.terminoBusqueda?.trim()) {
+            this.filtrarModulos();
+          }
+        }
+      },
+      error: (err) => console.error('Error al cargar templates:', err)
+    });
   }
 
   cargarModulos(): void {
     this.categoriaService.getModulos().subscribe({
       next: (modulos) => {
         this.modulosCompletos = modulos;
+        // Re-filtrar si ya hay un término de búsqueda activo
+        if (this.terminoBusqueda?.trim()) {
+          this.filtrarModulos();
+        }
       },
       error: (err) => {
         console.error('Error al cargar módulos:', err);
@@ -168,31 +191,79 @@ export class ConfigFormulariosComponent implements OnInit {
   }
 
   filtrarModulos(): void {
-    if (!this.terminoBusqueda || this.terminoBusqueda.trim() === '') {
-      // Si no hay término de búsqueda, no mostrar nada
+    if (!this.terminoBusqueda?.trim()) {
       this.configuracionesFiltradas = [];
       return;
     }
 
-    // Si hay datos cargados, filtrar
-    if (this.configuraciones.length > 0) {
-      const termino = this.terminoBusqueda.toLowerCase().trim();
-      this.configuracionesFiltradas = this.configuraciones.filter(config =>
-        config.modulo_nombre.toLowerCase().includes(termino)
-      );
-    } else {
-      // Si no hay datos cargados, cargarlos primero
-      this.cargarModulosConPreguntas();
+    // Esperar a que ambos recursos estén cargados
+    if (!this.modulosCompletos.length || !this.templates.length) {
+      return;
     }
+
+    const termino = this.terminoBusqueda.toLowerCase().trim();
+    const resultado: ModuloConfig[] = [];
+
+    for (const modulo of this.modulosCompletos) {
+      if (!modulo.nombre.toLowerCase().includes(termino)) continue;
+
+      const herencia = this.encontrarTemplateConHerencia(Number(modulo.id));
+      if (!herencia) continue; // No tiene formulario en ningún ancestro
+
+      const isDirect = herencia.origenModuloId === Number(modulo.id);
+      const template = this.templates.find(t => t.id === herencia.templateId);
+
+      resultado.push({
+        modulo_id: Number(modulo.id),
+        modulo_nombre: modulo.nombre,
+        origenModuloId: herencia.origenModuloId,
+        camposPersonalizados: isDirect ? ((template?.campos as any[]) || []) : []
+      });
+    }
+
+    this.configuracionesFiltradas = resultado;
   }
 
+  /**
+   * Busca el template que aplica a un módulo con herencia jerárquica.
+   * Sube por idpadre hasta encontrar uno. Retorna { templateId, origenModuloId } o null.
+   */
+  encontrarTemplateConHerencia(moduloId: number): { templateId: number; origenModuloId: number } | null {
+    // Construir mapa moduloId => templateId a partir de los templates cargados
+    const byModulo = new Map<number, number>();
+    for (const t of this.templates) {
+      if (!t.activo) continue;
+      for (const id of (t.modulos_asignados || [])) {
+        byModulo.set(Number(id), t.id!);
+      }
+    }
+
+    const byId = new Map<number, Modulo>();
+    this.modulosCompletos.forEach(m => byId.set(Number(m.id), m));
+
+    let current: number | null = moduloId;
+    while (current != null) {
+      if (byModulo.has(current)) {
+        return { templateId: byModulo.get(current)!, origenModuloId: current };
+      }
+      const mod = byId.get(current);
+      current = mod?.idpadre ? Number(mod.idpadre) : null;
+    }
+    return null;
+  }
 
   /**
-   * Obtiene la ruta de módulos según la profundidad:
-   * - Nivel 1: muestra solo el módulo ['PACO']
-   * - Nivel 2+: muestra ruta completa ['MISIONALES', 'LIBRO AL VIENTO', 'PROGRAMA']
+   * Retorna el nombre de un módulo por su ID.
    */
-  getRutaModulos(idModulo: number): string[] {
+  getNombreModulo(id: number): string {
+    return this.modulosCompletos.find(m => Number(m.id) === id)?.nombre ?? String(id);
+  }
+
+  /**
+   * Construye la ruta de módulos para mostrar como badges.
+   * Cuando origenModuloId != idModulo, el badge del ancestro origen se marca como heredado.
+   */
+  getRutaModulos(idModulo: number, origenModuloId?: number): { nombre: string; esOrigen: boolean }[] {
     if (!idModulo || !this.modulosCompletos?.length) {
       return [];
     }
@@ -200,26 +271,28 @@ export class ConfigFormulariosComponent implements OnInit {
     const byId = new Map<number, Modulo>();
     this.modulosCompletos.forEach(m => byId.set(Number(m.id), m));
 
-    const rutaCompleta: string[] = [];
+    const ids: number[] = [];
     let actual = byId.get(Number(idModulo));
-
     while (actual) {
-      rutaCompleta.unshift(actual.nombre);
-      
-      if (!actual.idpadre) {
-        break;
-      }
-      
+      ids.unshift(Number(actual.id));
+      if (!actual.idpadre) break;
       actual = byId.get(Number(actual.idpadre));
     }
 
-    // Si la ruta tiene 2 elementos (Categoría + Módulo nivel 1), solo mostrar el módulo
-    if (rutaCompleta.length === 2) {
-      return [rutaCompleta[1]];
-    }
+    // Convertir IDs a nombres con flag de herencia
+    const nombres = ids.map(id => byId.get(id)?.nombre ?? String(id));
 
-    // Si tiene 3+ elementos, mostrar toda la ruta
-    return rutaCompleta;
+    // Si la ruta tiene 2 elementos (Categoría + Módulo nivel 1), solo mostrar el módulo
+    const rutaFinal = nombres.length === 2 ? nombres.slice(1) : nombres;
+    const idsFinal  = ids.length === 2      ? ids.slice(1)     : ids;
+
+    return rutaFinal.map((nombre, i) => ({
+      nombre,
+      // Es origen heredado solo si hay origenModuloId, es distinto del módulo actual, y coincide
+      esOrigen: origenModuloId !== undefined
+               && origenModuloId !== idModulo
+               && idsFinal[i] === origenModuloId
+    }));
   }
 
   // ========== CAMPOS PERSONALIZADOS ==========
@@ -324,14 +397,21 @@ export class ConfigFormulariosComponent implements OnInit {
       if (errores > 0) this.error = `${errores} campo(s) no se pudieron crear`;
     }
 
+    // Recargar templates para reflejar posible nuevo template creado por herencia rota
+    this.cargarTemplates();
+
     this.formularioCampoService.getPorModulo(moduloRef.modulo_id, true).subscribe({
       next: (resp) => {
         if (resp.success) {
           moduloRef.camposPersonalizados = resp.campos || [];
+          moduloRef.origenModuloId = resp.origen_modulo_id ?? moduloRef.modulo_id;
           const index = this.configuraciones.findIndex(c => c.modulo_id === moduloRef.modulo_id);
           if (index !== -1) {
             this.configuraciones[index] = { ...moduloRef };
           }
+          // Actualizar también en configuracionesFiltradas
+          const fi = this.configuracionesFiltradas.findIndex(c => c.modulo_id === moduloRef.modulo_id);
+          if (fi !== -1) this.configuracionesFiltradas[fi] = { ...moduloRef };
         }
         this.cerrarModalCampo();
       }
@@ -438,20 +518,17 @@ export class ConfigFormulariosComponent implements OnInit {
           console.log('Respuesta al crear campo:', response);
           if (response.success) {
             this.exito = 'Campo creado exitosamente';
-            // Recargar campos antes de cerrar el modal
-            console.log('Recargando campos para módulo:', moduloRef!.modulo_id);
+            // Recargar templates para reflejar posible nuevo template creado por herencia rota
+            this.cargarTemplates();
             this.formularioCampoService.getPorModulo(moduloRef!.modulo_id, true).subscribe({
               next: (resp) => {
-                console.log('Campos recargados después de crear:', resp);
                 if (resp.success) {
                   moduloRef!.camposPersonalizados = resp.campos || [];
-                  
-                  // Actualizar la referencia en el array
+                  moduloRef!.origenModuloId = resp.origen_modulo_id ?? moduloRef!.modulo_id;
                   const index = this.configuraciones.findIndex(c => c.modulo_id === moduloRef!.modulo_id);
-                  if (index !== -1) {
-                    this.configuraciones[index] = { ...moduloRef! };
-                    console.log('Configuración actualizada en índice:', index, this.configuraciones[index]);
-                  }
+                  if (index !== -1) this.configuraciones[index] = { ...moduloRef! };
+                  const fi = this.configuracionesFiltradas.findIndex(c => c.modulo_id === moduloRef!.modulo_id);
+                  if (fi !== -1) this.configuracionesFiltradas[fi] = { ...moduloRef! };
                 }
                 this.cerrarModalCampo();
               }
@@ -476,28 +553,22 @@ export class ConfigFormulariosComponent implements OnInit {
 
     this.formularioCampoService.eliminar(campo.id!).subscribe({
       next: (response) => {
-        console.log('Respuesta al eliminar campo:', response);
         if (response.success) {
           this.exito = 'Campo eliminado exitosamente';
-          
-          // Recargar campos después de eliminar
-          console.log('Recargando campos para módulo después de eliminar:', moduloConfig.modulo_id);
+          // Recargar campos y templates
+          this.cargarTemplates();
           this.formularioCampoService.getPorModulo(moduloConfig.modulo_id, true).subscribe({
             next: (resp) => {
-              console.log('Campos recargados después de eliminar:', resp);
               if (resp.success) {
                 moduloConfig.camposPersonalizados = resp.campos || [];
-                
-                // Actualizar la referencia en el array
+                moduloConfig.origenModuloId = resp.origen_modulo_id ?? moduloConfig.modulo_id;
                 const index = this.configuraciones.findIndex(c => c.modulo_id === moduloConfig.modulo_id);
-                if (index !== -1) {
-                  this.configuraciones[index] = { ...moduloConfig };
-                  console.log('Configuración actualizada después de eliminar en índice:', index);
-                }
+                if (index !== -1) this.configuraciones[index] = { ...moduloConfig };
+                const fi = this.configuracionesFiltradas.findIndex(c => c.modulo_id === moduloConfig.modulo_id);
+                if (fi !== -1) this.configuracionesFiltradas[fi] = { ...moduloConfig };
               }
             }
           });
-          
           setTimeout(() => this.exito = '', 3000);
         } else {
           this.error = response.message || 'Error al eliminar campo';

@@ -191,30 +191,22 @@ import { AuthService } from '../../services/auth.service';
                 <small class="uploading" *ngIf="subiendoImagen">Subiendo imagen del portapapeles...</small>
               </div>
 
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Módulo:</label>
-                  <select 
-                    [(ngModel)]="nuevaPregunta.Idmodulo" 
-                    name="modulo"
-                    required
-                  >
-                    <option [value]="null">Selecciona un módulo</option>
-                    <option *ngFor="let mod of modulosParaFormulario" [value]="mod.id">
-                      {{ mod.nombre }}
-                    </option>
-                  </select>
-                </div>
-
-                <div class="form-group">
-                  <label>Aplicativo:</label>
-                  <input 
-                    type="text" 
-                    [(ngModel)]="nuevaPregunta.Aplicativo" 
-                    name="aplicativo"
-                  />
-                </div>
+              <!-- Selects en cascada: Categoría → Módulo → Submódulo → … -->
+              <div class="form-group" *ngFor="let nv of modalNiveles; let i = index">
+                <label>{{ getLabelNivel(i) }}:</label>
+                <select
+                  [(ngModel)]="modalSelecciones[i]"
+                  [name]="'modal_nivel_' + i"
+                  (ngModelChange)="onModalNivelChange(i)"
+                >
+                  <option [ngValue]="null">Selecciona {{ getLabelNivel(i).toLowerCase() }}...</option>
+                  <option *ngFor="let mod of modalNiveles[i]" [value]="mod.id">
+                    {{ mod.nombre }}
+                  </option>
+                </select>
               </div>
+
+              
 
               <div class="form-actions">
                 <button type="submit" class="btn-save">{{ editandoPregunta ? 'Actualizar' : 'Guardar' }}</button>
@@ -1127,6 +1119,11 @@ export class AdminPreguntasComponent implements OnInit {
 
   mostrarFormulario = false;
   editandoPregunta = false;
+
+  // Modal: selects en cascada para módulo
+  modalNiveles: Modulo[][] = [];
+  modalSelecciones: (number | null)[] = [];
+
   preguntasFiltradas: Pregunta[] = [];
   consultaRealizada = false;
 
@@ -1600,6 +1597,68 @@ export class AdminPreguntasComponent implements OnInit {
     this.consultaRealizada = false;
   }
 
+  getLabelNivel(nivel: number): string {
+    const labels = ['Categoría', 'Módulo', 'Submódulo', 'Sub-submódulo', 'Detalle'];
+    return labels[nivel] ?? `Nivel ${nivel + 1}`;
+  }
+
+  inicializarModalSeleccionModulo(idModuloPreseleccionado?: number | null): void {
+    const todos = this.modulosParaFormulario;
+    const ids = new Set(todos.map(m => Number(m.id)));
+    const raices = todos.filter(m => !m.idpadre || !ids.has(Number(m.idpadre)));
+
+    if (!raices.length) {
+      this.modalNiveles = [];
+      this.modalSelecciones = [];
+      return;
+    }
+
+    const niveles: Modulo[][] = [raices];
+    const selecciones: (number | null)[] = [null];
+
+    if (idModuloPreseleccionado) {
+      const byId = new Map(todos.map(m => [Number(m.id), m]));
+      const ruta: number[] = [];
+      let current = byId.get(Number(idModuloPreseleccionado));
+      while (current) {
+        ruta.unshift(Number(current.id));
+        if (!current.idpadre || !ids.has(Number(current.idpadre))) break;
+        current = byId.get(Number(current.idpadre));
+      }
+      ruta.forEach((id, i) => {
+        selecciones[i] = id;
+        const hijos = todos.filter(m => Number(m.idpadre) === id);
+        if (hijos.length > 0) {
+          niveles[i + 1] = hijos;
+          selecciones[i + 1] = ruta[i + 1] ?? null;
+        }
+      });
+    }
+
+    this.modalNiveles = niveles;
+    this.modalSelecciones = selecciones;
+  }
+
+  onModalNivelChange(nivel: number): void {
+    const selId = this.modalSelecciones[nivel];
+    const nuevosNiveles = this.modalNiveles.slice(0, nivel + 1);
+    const nuevasSelecciones = this.modalSelecciones.slice(0, nivel + 1);
+
+    if (selId != null) {
+      const hijos = this.modulosParaFormulario.filter(m => Number(m.idpadre) === Number(selId));
+      if (hijos.length > 0) {
+        nuevosNiveles.push(hijos);
+        nuevasSelecciones.push(null);
+      }
+    }
+
+    this.modalNiveles = nuevosNiveles;
+    this.modalSelecciones = nuevasSelecciones;
+
+    const deepest = [...nuevasSelecciones].reverse().find(s => s != null);
+    this.nuevaPregunta.Idmodulo = deepest != null ? Number(deepest) : undefined;
+  }
+
   abrirAgregar() {
     this.editandoPregunta = false;
     this.nuevaPregunta = {
@@ -1608,18 +1667,22 @@ export class AdminPreguntasComponent implements OnInit {
       Idmodulo: undefined,
       Aplicativo: undefined
     };
+    this.inicializarModalSeleccionModulo();
     this.mostrarFormulario = true;
   }
 
   editarPregunta(pregunta: Pregunta) {
     this.editandoPregunta = true;
     this.nuevaPregunta = { ...pregunta };
+    this.inicializarModalSeleccionModulo(pregunta.Idmodulo);
     this.mostrarFormulario = true;
   }
 
   cerrarFormulario() {
     this.mostrarFormulario = false;
     this.editandoPregunta = false;
+    this.modalNiveles = [];
+    this.modalSelecciones = [];
   }
 
   actualizarModuloNombre() {
@@ -1854,6 +1917,42 @@ export class AdminPreguntasComponent implements OnInit {
     }
 
     return ruta;
+  }
+
+  /**
+   * Construye la lista de módulos permitidos en orden jerárquico (DFS),
+   * con prefijo de espacios para indicar el nivel de anidamiento.
+   * Usado en el select del modal de creación/edición de preguntas.
+   */
+  get modulosFormularioJerarquicos(): { id: number; label: string }[] {
+    if (!this.modulosParaFormulario?.length) return [];
+
+    const ids = new Set(this.modulosParaFormulario.map(m => Number(m.id)));
+
+    // Mapa padre -> hijos (solo dentro de la lista filtrada)
+    const children = new Map<number | null, Modulo[]>();
+    this.modulosParaFormulario.forEach(m => {
+      const parentId = m.idpadre && ids.has(Number(m.idpadre))
+        ? Number(m.idpadre)
+        : null;
+      if (!children.has(parentId)) children.set(parentId, []);
+      children.get(parentId)!.push(m);
+    });
+
+    const result: { id: number; label: string }[] = [];
+
+    const traverse = (parentId: number | null, depth: number) => {
+      const kids = children.get(parentId) || [];
+      kids.forEach(m => {
+        // 4 espacios no separables por nivel
+        const prefix = '\u00A0'.repeat(depth * 4);
+        result.push({ id: Number(m.id), label: prefix + m.nombre });
+        traverse(Number(m.id), depth + 1);
+      });
+    };
+
+    traverse(null, 0);
+    return result;
   }
 
   // ========== DRAG AND DROP ==========

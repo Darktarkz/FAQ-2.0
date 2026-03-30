@@ -11,6 +11,8 @@ use App\Http\Controllers\FormularioCampoController;
 use App\Http\Controllers\FormularioTemplateController;
 use App\Http\Controllers\ModuloFormularioConfigController;
 use App\Http\Controllers\MetricasController;
+use App\Http\Controllers\DependenciaController;
+use App\Http\Controllers\SolicitudAccesoController;
 
 /*
 |--------------------------------------------------------------------------
@@ -59,12 +61,18 @@ Route::prefix('formulario-config')->group(function () {
     Route::get('/modulo/{moduloId}', [ModuloFormularioConfigController::class, 'getPorModulo']); // GET /api/formulario-config/modulo/{id}
 });
 
-// Ruta pública para obtener campos de formulario por módulo (usada en formulario de soporte público)
+// Ruta pública para obtener campos de formulario por módulo (soporta ?pregunta_id=X para fallback por pregunta)
 Route::get('/formulario-campos/modulo/{moduloId}', [FormularioCampoController::class, 'getPorModulo']);
 
 // Rutas públicas de votos (usuarios sin auth pueden votar)
 Route::post('/votos', [MetricasController::class, 'votar']);
 Route::get('/votos/{preguntaId}', [MetricasController::class, 'votosPregunta']);
+
+// Rutas públicas de dependencias (para formulario de accesos)
+Route::get('/dependencias', [DependenciaController::class, 'index']);
+
+// Rutas de solicitudes de acceso
+Route::post('/solicitudes-acceso', [SolicitudAccesoController::class, 'store']); // Público
 
 // Rutas protegidas (requieren autenticación)
 Route::middleware('auth:sanctum')->group(function () {
@@ -126,6 +134,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Gestión de campos personalizados de formularios (solo admin)
     Route::prefix('formulario-campos')->group(function () {
+        Route::get('/pregunta/{preguntaId}', [FormularioCampoController::class, 'getPorPregunta']); // GET /api/formulario-campos/pregunta/{id}
         Route::post('/', [FormularioCampoController::class, 'store']);                        // POST /api/formulario-campos (crear campo)
         Route::put('/{id}', [FormularioCampoController::class, 'update']);                    // PUT /api/formulario-campos/{id} (actualizar campo)
         Route::delete('/{id}', [FormularioCampoController::class, 'destroy']);                // DELETE /api/formulario-campos/{id} (eliminar campo)
@@ -141,5 +150,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('metricas')->group(function () {
         Route::get('/dashboard', [MetricasController::class, 'dashboard']);
         Route::get('/exportar-csv', [MetricasController::class, 'exportarCsv']);
+    });
+
+    // Gestión de solicitudes de acceso (solo admin)
+    Route::prefix('solicitudes-acceso')->group(function () {
+        Route::get('/', [SolicitudAccesoController::class, 'index']);             // GET /api/solicitudes-acceso
+        Route::get('/{id}', [SolicitudAccesoController::class, 'show']);          // GET /api/solicitudes-acceso/{id}
+        Route::put('/{id}/estado', [SolicitudAccesoController::class, 'updateEstado']); // PUT /api/solicitudes-acceso/{id}/estado
     });
 });

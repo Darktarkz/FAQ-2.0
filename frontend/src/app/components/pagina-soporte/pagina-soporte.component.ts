@@ -14,6 +14,7 @@ export class PaginaSoporteComponent implements OnInit {
   moduloId: number = 0;
   moduloNombre: string = '';
   preguntaNombre: string = '';
+  preguntaId: number = 0;
 
   constructor(
     private route: ActivatedRoute,
@@ -26,12 +27,14 @@ export class PaginaSoporteComponent implements OnInit {
     this.moduloId = +snap['modulo_id'] || 0;
     this.moduloNombre = snap['modulo_nombre'] || 'Módulo no especificado';
     this.preguntaNombre = snap['pregunta_nombre'] || '';
+    this.preguntaId = +snap['pregunta_id'] || 0;
 
     // También suscribirse por si hay navegación posterior
     this.route.queryParams.subscribe(params => {
       this.moduloId = +params['modulo_id'] || 0;
       this.moduloNombre = params['modulo_nombre'] || 'Módulo no especificado';
       this.preguntaNombre = params['pregunta_nombre'] || '';
+      this.preguntaId = +params['pregunta_id'] || 0;
     });
   }
 

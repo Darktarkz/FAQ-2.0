@@ -41,7 +41,7 @@ class CategoriaController extends Controller
         $validated = $request->validate([
             'nombre' => 'required|string|max:255',
             'descripcion' => 'nullable|string',
-            'id_categoria' => 'required|integer|exists:categorias,id',
+            'idpadre' => 'nullable|integer|exists:modulos,id',
         ]);
 
         $categoria = Modulo::create($validated);

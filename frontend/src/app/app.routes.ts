@@ -13,6 +13,8 @@ import { PaginaSoporteComponent } from './components/pagina-soporte/pagina-sopor
 import { ListaFormulariosComponent } from './components/lista-formularios/lista-formularios.component';
 import { ConstructorFormularioComponent } from './components/constructor-formulario/constructor-formulario.component';
 import { ConfigFormulariosComponent } from './components/config-formularios/config-formularios.component';
+import { ConfigFormulariosPreg } from './components/config-formularios-pregunta/config-formularios-pregunta.component';
+import { FormularioAccesosComponent } from './components/formulario-accesos/formulario-accesos.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'preguntas', pathMatch: 'full' },
@@ -24,6 +26,10 @@ export const routes: Routes = [
   {
     path: 'soporte',
     component: PaginaSoporteComponent
+  },
+  {
+    path: 'solicitud-accesos',
+    component: FormularioAccesosComponent
   },
   {
     path: 'admin',
@@ -69,6 +75,10 @@ export const routes: Routes = [
       {
         path: 'config-formularios',
         component: ConfigFormulariosComponent
+      },
+      {
+        path: 'config-formularios-pregunta',
+        component: ConfigFormulariosPreg
       }
     ]
   },

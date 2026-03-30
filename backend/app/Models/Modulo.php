@@ -14,4 +14,9 @@ class Modulo extends Model
     protected $fillable = ['nombre', 'descripcion', 'idpadre', 'icono', 'orden'];
 
     public $timestamps = true;
+
+    public function padre()
+    {
+        return $this->belongsTo(Modulo::class, 'idpadre');
+    }
 }

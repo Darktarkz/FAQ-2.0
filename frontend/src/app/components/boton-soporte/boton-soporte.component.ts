@@ -13,9 +13,10 @@ export class BotonSoporteComponent implements OnInit, OnDestroy {
   @Input() moduloId!: number;
   @Input() moduloNombre!: string;
   @Input() preguntaNombre: string = '';
+  @Input() preguntaId: number = 0;
   @Input() posicion: 'fixed' | 'static' = 'fixed';
 
-  countdown = 30;
+  countdown = 1;
   timerVisible = false;
   isDisabled = false;
 
@@ -55,7 +56,8 @@ export class BotonSoporteComponent implements OnInit, OnDestroy {
       queryParams: {
         modulo_id: this.moduloId,
         modulo_nombre: this.moduloNombre,
-        pregunta_nombre: this.preguntaNombre
+        pregunta_nombre: this.preguntaNombre,
+        pregunta_id: this.preguntaId || undefined
       }
     });
   }

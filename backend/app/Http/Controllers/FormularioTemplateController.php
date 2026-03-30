@@ -45,23 +45,27 @@ class FormularioTemplateController extends Controller
     }
 
     /**
-     * Obtener formulario asignado a un módulo específico (público)
+     * Obtener formulario asignado a un módulo específico (público), con herencia jerárquica.
      */
     public function porModulo($moduloId): JsonResponse
     {
-        $formulario = FormularioTemplate::porModulo($moduloId);
+        $resultado = FormularioTemplate::porModuloConHerencia((int) $moduloId);
+        $formulario = $resultado['template'];
+        $origenModuloId = $resultado['origen_modulo_id'];
 
         if (!$formulario) {
             return response()->json([
-                'success' => false,
-                'message' => 'No hay formulario asignado a este módulo',
-                'formulario' => null
+                'success'          => false,
+                'message'          => 'No hay formulario asignado a este módulo',
+                'formulario'       => null,
+                'origen_modulo_id' => null,
             ]);
         }
 
         return response()->json([
-            'success' => true,
-            'formulario' => $formulario
+            'success'          => true,
+            'formulario'       => $formulario,
+            'origen_modulo_id' => $origenModuloId,
         ]);
     }
 

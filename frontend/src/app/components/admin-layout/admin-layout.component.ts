@@ -23,14 +23,20 @@ import { AuthService } from '../../services/auth.service';
           <a routerLink="/admin/modulos" routerLinkActive="active">
             <span class="icon">📦</span> Módulos
           </a>
-          <a *ngIf="isAdmin" routerLink="/admin/usuarios" routerLinkActive="active">
-            <span class="icon">👥</span> Usuarios
-          </a>
           <a routerLink="/admin/preguntas" routerLinkActive="active">
             <span class="icon">❓</span> Preguntas
           </a>
           <a routerLink="/admin/config-formularios" routerLinkActive="active">
             <span class="icon">⚙️</span> Configuración de Formularios
+          </a>
+          <a routerLink="/admin/config-formularios-pregunta" routerLinkActive="active">
+            <span class="icon">🎯</span> Formularios por Pregunta
+          </a>
+          <a routerLink="/solicitud-accesos" routerLinkActive="active">
+            <span class="icon">🔑</span> Solicitud de Accesos
+          </a>
+          <a *ngIf="isAdmin" routerLink="/admin/usuarios" routerLinkActive="active">
+            <span class="icon">👥</span> Usuarios
           </a>
         </nav>
         <div class="sidebar-footer">

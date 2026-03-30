@@ -292,6 +292,22 @@
     letter-spacing: 0.3px;
 }
 
+/* Badge del módulo ancestro que provee el formulario heredado */
+.modulo-badge--heredado {
+    background-color: #65558F;
+    color: white;
+}
+
+.herencia-info {
+    font-size: 12px;
+    color: #65558F;
+    margin: 0 0 10px 0;
+    padding: 6px 10px;
+    background: #f3f0f8;
+    border-radius: 6px;
+    border-left: 3px solid #65558F;
+}
+
 .modulo-id {
     background: linear-gradient(135deg, #65558F 0%, #5F448F 100%);
     color: white;

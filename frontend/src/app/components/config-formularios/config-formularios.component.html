@@ -70,14 +70,28 @@
           <h3>{{ moduloConfig.modulo_nombre }}</h3>
           <div class="modulo-badges">
             <span
-              *ngFor="let nombreModulo of getRutaModulos(moduloConfig.modulo_id)"
+              *ngFor="
+                let badge of getRutaModulos(moduloConfig.modulo_id, moduloConfig.origenModuloId)
+              "
               class="modulo-badge"
+              [class.modulo-badge--heredado]="badge.esOrigen"
+              [title]="badge.esOrigen ? 'Formulario heredado de este módulo' : ''"
             >
-              {{ nombreModulo }}
+              {{ badge.nombre }}
             </span>
           </div>
         </div>
         <!--<span class="modulo-id">ID: {{ moduloConfig.modulo_id }}</span>-->
+      </div>
+
+      <!-- Banner de herencia -->
+      <div
+        *ngIf="
+          moduloConfig.origenModuloId && moduloConfig.origenModuloId !== moduloConfig.modulo_id
+        "
+        class="herencia-info"
+      >
+        📌 Hereda formulario de <strong>{{ getNombreModulo(moduloConfig.origenModuloId) }}</strong>
       </div>
 
       <!-- Info y Campos Personalizados -->
@@ -189,7 +203,21 @@
           "
           class="campos-empty"
         >
-          <p>No hay campos personalizados. Haz clic en "+ Agregar Campo" para crear uno.</p>
+          <ng-container
+            *ngIf="
+              moduloConfig.origenModuloId && moduloConfig.origenModuloId !== moduloConfig.modulo_id;
+              else sinHerencia
+            "
+          >
+            <p>
+              No hay campos propios. Este módulo hereda el formulario de
+              <strong>{{ getNombreModulo(moduloConfig.origenModuloId) }}</strong
+              >. Agrega un campo para crear un formulario independiente.
+            </p>
+          </ng-container>
+          <ng-template #sinHerencia>
+            <p>No hay campos personalizados. Haz clic en "+ Agregar Campo" para crear uno.</p>
+          </ng-template>
         </div>
       </div>
     </div>

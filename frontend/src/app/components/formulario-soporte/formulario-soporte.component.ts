@@ -15,6 +15,7 @@ export class FormularioSoporteComponent implements OnInit, OnChanges {
   @Input() moduloId!: number;
   @Input() moduloNombre!: string;
   @Input() preguntaNombre: string = '';
+  @Input() preguntaId: number = 0;
 
   // Campos personalizados del módulo
   camposPersonalizados: FormularioCampo[] = [];
@@ -50,7 +51,8 @@ export class FormularioSoporteComponent implements OnInit, OnChanges {
     if (!this.moduloId) return;
     this.cargandoFormulario = true;
     
-    this.formularioCampoService.getPorModulo(this.moduloId).subscribe({
+    // Si hay preguntaId, el backend aplica fallback pregunta → módulo automáticamente
+    this.formularioCampoService.getPorModulo(this.moduloId, false, this.preguntaId || undefined).subscribe({
       next: (response) => {
         if (response.success && response.campos) {
           this.camposPersonalizados = response.campos;
