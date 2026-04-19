@@ -25,105 +25,329 @@
         <span class="pregunta-badge">🎯 Pregunta seleccionada</span>
         <h3>{{ preguntaSeleccionada.pregunta_texto }}</h3>
         <small *ngIf="preguntaSeleccionada.modulo_nombre">
-          Módulo: {{ preguntaSeleccionada.modulo_nombre }}
+          📁 {{ preguntaSeleccionada.modulo_nombre }}
         </small>
       </div>
       <button (click)="limpiarSeleccion()" class="btn btn-cambiar">🔄 Cambiar pregunta</button>
     </div>
 
-    <!-- Campos de la pregunta -->
-    <div class="campos-section">
-      <div class="section-header">
-        <h4>📋 Campos exclusivos de esta pregunta</h4>
-        <button class="btn btn-add-campo" (click)="abrirModalAgregar()">+ Agregar Campo</button>
-      </div>
-
-      <div *ngIf="cargandoCampos" class="loading-state">
-        <div class="spinner"></div>
-        <p>Cargando campos...</p>
-      </div>
-
-      <div
-        *ngIf="!cargandoCampos && camposOrdenados.length > 0"
-        class="campos-lista"
-        cdkDropList
-        [cdkDropListData]="camposOrdenados"
-        (cdkDropListDropped)="onDropCampo($event)"
-      >
-        <div
-          *ngFor="let campo of camposOrdenados; let i = index; let first = first; let last = last"
-          class="campo-personalizado"
-          cdkDrag
-        >
-          <div class="campo-orden-btns" cdkDragHandle>
-            <button
-              class="btn-orden btn-orden-up"
-              [disabled]="first"
-              (click)="moverCampo(i, -1)"
-              title="Subir"
-            >
-              ▲
-            </button>
-            <span class="campo-orden-num">{{ i + 1 }}</span>
-            <button
-              class="btn-orden btn-orden-down"
-              [disabled]="last"
-              (click)="moverCampo(i, 1)"
-              title="Bajar"
-            >
-              ▼
-            </button>
-          </div>
-          <div class="campo-info">
-            <div class="campo-header-custom">
-              <strong>{{ campo.etiqueta }}</strong>
-              <span class="campo-tipo-badge">{{ campo.tipo }}</span>
-              <span *ngIf="campo.requerido" class="campo-requerido-badge">Requerido</span>
-              <span *ngIf="!campo.visible" class="campo-oculto-badge" title="Campo oculto"
-                >👁️‍🗨️ Oculto</span
+    <!-- Layout dos columnas: gestión + vista previa -->
+    <div class="pregunta-workspace">
+      <!-- Panel izquierdo: gestión de campos -->
+      <div class="management-panel">
+        <div class="campos-section">
+          <!-- Selector de tipo (badge + botón cambiar) -->
+          <div *ngIf="tipoFormulario && !mostrarModalTipo" class="tipo-badge-bar">
+            <div class="tipo-badge-info">
+              <span *ngIf="tipoFormulario === 'personalizado'" class="tipo-badge tipo-personalizado"
+                >📋 Formulario personalizado</span
+              >
+              <span *ngIf="tipoFormulario === 'solicitud_acceso'" class="tipo-badge tipo-acceso"
+                >🔐 Solicitud de acceso</span
               >
             </div>
-            <div class="campo-detalles">
-              <small *ngIf="campo.placeholder">Placeholder: {{ campo.placeholder }}</small>
-              <small *ngIf="campo.descripcion_ayuda">Ayuda: {{ campo.descripcion_ayuda }}</small>
-              <small *ngIf="campo.opciones && campo.opciones.length > 0">
-                Opciones: {{ campo.opciones.join(', ') }}
-              </small>
+            <button
+              class="btn-cambiar-tipo"
+              (click)="cambiarTipoFormulario()"
+              title="Cambiar tipo de formulario"
+            >
+              Cambiar tipo
+            </button>
+          </div>
+
+          <!-- Tarjeta informativa cuando es solicitud de acceso -->
+          <div *ngIf="tipoFormulario === 'solicitud_acceso'" class="acceso-card">
+            <div class="acceso-card-icono">🔐</div>
+            <div class="acceso-card-body">
+              <h4 class="acceso-card-titulo">Formulario de Solicitud de Acceso asignado</h4>
+              <p class="acceso-card-desc">
+                Cuando el usuario haga clic en <strong>Soporte</strong> desde esta pregunta, será
+                redirigido automáticamente al formulario de solicitud de acceso a plataformas.
+              </p>
+              <div class="acceso-card-nota">
+                <span>ℹ️</span>
+                <span
+                  >No es necesario configurar campos adicionales. El formulario de solicitud de
+                  acceso es estándar para toda la organización.</span
+                >
+              </div>
             </div>
           </div>
-          <div class="campo-acciones">
-            <button
-              class="btn-icon btn-visibility-icon"
-              (click)="toggleVisibilidad(campo)"
-              [title]="campo.visible ? 'Ocultar campo' : 'Mostrar campo'"
+
+          <!-- Gestión de campos solo si tipo es personalizado -->
+          <ng-container *ngIf="tipoFormulario === 'personalizado'">
+            <div class="section-header">
+              <div class="section-header-info">
+                <h4>📋 Campos del formulario</h4>
+                <small class="section-header-desc">Arrastra para reordenar</small>
+              </div>
+              <button class="btn btn-add-campo" (click)="abrirModalAgregar()">
+                + Agregar Campo
+              </button>
+            </div>
+
+            <div *ngIf="cargandoCampos" class="loading-state">
+              <div class="spinner"></div>
+              <p>Cargando campos...</p>
+            </div>
+
+            <div
+              *ngIf="!cargandoCampos && camposOrdenados.length > 0"
+              class="campos-lista"
+              cdkDropList
+              [cdkDropListData]="camposOrdenados"
+              (cdkDropListDropped)="onDropCampo($event)"
             >
-              {{ campo.visible ? '👁️' : '👁️‍🗨️' }}
-            </button>
-            <button class="btn-icon btn-edit-icon" (click)="abrirModalEditar(campo)" title="Editar">
-              ✏️
-            </button>
-            <button
-              class="btn-icon btn-delete-icon"
-              (click)="eliminarCampo(campo)"
-              title="Eliminar"
+              <div
+                *ngFor="
+                  let campo of camposOrdenados;
+                  let i = index;
+                  let first = first;
+                  let last = last
+                "
+                class="campo-personalizado"
+                cdkDrag
+              >
+                <div class="campo-orden-btns" cdkDragHandle title="Arrastra para reordenar">
+                  <button
+                    class="btn-orden btn-orden-up"
+                    [disabled]="first"
+                    (click)="moverCampo(i, -1)"
+                    title="Subir"
+                  >
+                    ▲
+                  </button>
+                  <span class="campo-orden-num">{{ i + 1 }}</span>
+                  <button
+                    class="btn-orden btn-orden-down"
+                    [disabled]="last"
+                    (click)="moverCampo(i, 1)"
+                    title="Bajar"
+                  >
+                    ▼
+                  </button>
+                </div>
+
+                <div class="campo-info">
+                  <div class="campo-header-custom">
+                    <strong>{{ campo.etiqueta }}</strong>
+                    <span class="campo-tipo-badge">{{ campo.tipo }}</span>
+                    <span *ngIf="campo.requerido" class="campo-requerido-badge">Requerido</span>
+                    <span *ngIf="!campo.visible" class="campo-oculto-badge">👁️ Oculto</span>
+                  </div>
+                  <div class="campo-detalles">
+                    <small *ngIf="campo.placeholder" class="detalle-chip"
+                      >💬 {{ campo.placeholder }}</small
+                    >
+                    <small *ngIf="campo.descripcion_ayuda" class="detalle-chip"
+                      >ℹ️ {{ campo.descripcion_ayuda }}</small
+                    >
+                    <small *ngIf="campo.opciones && campo.opciones.length > 0" class="detalle-chip">
+                      🏷️ {{ campo.opciones.slice(0, 3).join(', ')
+                      }}{{ campo.opciones.length > 3 ? '...' : '' }}
+                    </small>
+                  </div>
+                </div>
+
+                <div class="campo-acciones">
+                  <button
+                    class="btn-icon btn-visibility-icon"
+                    (click)="toggleVisibilidad(campo)"
+                    [title]="
+                      campo.visible
+                        ? 'Ocultar campo del formulario'
+                        : 'Mostrar campo en el formulario'
+                    "
+                    [class.btn-icon-inactive]="!campo.visible"
+                  >
+                    {{ campo.visible ? '👁️' : '🚫' }}
+                  </button>
+                  <button
+                    class="btn-icon btn-edit-icon"
+                    (click)="abrirModalEditar(campo)"
+                    title="Editar campo"
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    class="btn-icon btn-delete-icon"
+                    (click)="eliminarCampo(campo)"
+                    title="Eliminar campo"
+                  >
+                    🗑️
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Estado vacío guiado -->
+            <div
+              *ngIf="!cargandoCampos && camposOrdenados.length === 0"
+              class="campos-empty-guiado"
             >
-              🗑️
-            </button>
-          </div>
+              <div class="empty-state-icon-big">📋</div>
+              <h4 class="empty-state-titulo">Sin campos configurados aún</h4>
+              <p class="empty-state-desc">
+                Agrega los campos que necesitas recopilar cuando el usuario solicite soporte desde
+                esta pregunta.
+              </p>
+              <div class="empty-state-nota">
+                <span>ℹ️</span>
+                <span
+                  >Mientras no haya campos, el formulario del módulo al que pertenece esta pregunta
+                  se usará por defecto.</span
+                >
+              </div>
+              <button class="btn btn-add-campo empty-state-btn" (click)="abrirModalAgregar()">
+                ➕ Agregar primer campo
+              </button>
+            </div> </ng-container
+          ><!-- /tipo personalizado -->
         </div>
       </div>
 
-      <div *ngIf="!cargandoCampos && camposOrdenados.length === 0" class="campos-empty">
-        <p>
-          Esta pregunta no tiene campos específicos aún. Haz clic en "+ Agregar Campo" para crear el
-          primer campo.
-        </p>
-        <p class="campos-empty-nota">
-          ℹ️ Mientras no tenga campos, el formulario de soporte usará los campos del módulo al que
-          pertenece la pregunta.
-        </p>
+      <!-- Panel derecho: vista previa en vivo -->
+      <div class="preview-panel">
+        <div class="preview-header">
+          <div class="preview-header-info">
+            <h4>👁️ Vista previa</h4>
+            <small>Así verá el usuario el formulario</small>
+          </div>
+          <span
+            class="preview-badge"
+            *ngIf="tipoFormulario === 'personalizado' && camposVisiblesEnPreview.length > 0"
+          >
+            {{ camposVisiblesEnPreview.length }} campo(s)
+          </span>
+        </div>
+
+        <!-- Vista previa para solicitud de acceso -->
+        <div *ngIf="tipoFormulario === 'solicitud_acceso'" class="preview-body preview-acceso">
+          <div class="preview-acceso-card">
+            <div class="preview-acceso-icono">🔐</div>
+            <p class="preview-acceso-titulo">Formulario de Solicitud de Acceso</p>
+            <p class="preview-acceso-desc">
+              El usuario será redirigido a este formulario al hacer clic en Soporte.
+            </p>
+            <div class="preview-acceso-campos">
+              <div class="preview-acceso-campo-item">👤 Nombre completo</div>
+              <div class="preview-acceso-campo-item">🪪 Número de documento</div>
+              <div class="preview-acceso-campo-item">📧 Correo electrónico</div>
+              <div class="preview-acceso-campo-item">🏢 Dependencia</div>
+              <div class="preview-acceso-campo-item">💻 Plataformas a solicitar</div>
+              <div class="preview-acceso-campo-item">✍️ Firmas y anexos</div>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="tipoFormulario === 'personalizado'" class="preview-body">
+          <div *ngIf="camposVisiblesEnPreview.length > 0" class="preview-form-grid">
+            <div
+              *ngFor="let campo of camposVisiblesEnPreview"
+              class="preview-field-wrapper"
+              [style.grid-column]="'span ' + campo.tamano_columna"
+            >
+              <label class="preview-label">
+                {{ campo.etiqueta }}
+                <span *ngIf="campo.requerido" class="preview-requerido" title="Campo requerido"
+                  >*</span
+                >
+              </label>
+
+              <ng-container [ngSwitch]="campo.tipo">
+                <input
+                  *ngSwitchCase="'text'"
+                  type="text"
+                  [placeholder]="campo.placeholder || 'Texto...'"
+                  class="preview-input"
+                  disabled
+                />
+                <input
+                  *ngSwitchCase="'email'"
+                  type="email"
+                  [placeholder]="campo.placeholder || 'correo@ejemplo.com'"
+                  class="preview-input"
+                  disabled
+                />
+                <input
+                  *ngSwitchCase="'tel'"
+                  type="tel"
+                  [placeholder]="campo.placeholder || 'Teléfono...'"
+                  class="preview-input"
+                  disabled
+                />
+                <input
+                  *ngSwitchCase="'number'"
+                  type="number"
+                  [placeholder]="campo.placeholder || '0'"
+                  class="preview-input"
+                  disabled
+                />
+                <input *ngSwitchCase="'date'" type="date" class="preview-input" disabled />
+                <input
+                  *ngSwitchCase="'datetime-local'"
+                  type="datetime-local"
+                  class="preview-input"
+                  disabled
+                />
+                <textarea
+                  *ngSwitchCase="'textarea'"
+                  [placeholder]="campo.placeholder || 'Escribe aquí...'"
+                  rows="3"
+                  class="preview-input preview-textarea"
+                  disabled
+                ></textarea>
+                <select *ngSwitchCase="'select'" class="preview-input" disabled>
+                  <option *ngFor="let op of campo.opciones || []" [value]="op">{{ op }}</option>
+                  <option *ngIf="!campo.opciones?.length" value="">-- Seleccionar --</option>
+                </select>
+                <div *ngSwitchCase="'checkbox'" class="preview-check-group">
+                  <label
+                    *ngFor="
+                      let op of campo.opciones?.length ? campo.opciones : ['Opción 1', 'Opción 2']
+                    "
+                    class="preview-check-label"
+                  >
+                    <input type="checkbox" disabled /> {{ op }}
+                  </label>
+                </div>
+                <div *ngSwitchCase="'radio'" class="preview-check-group">
+                  <label
+                    *ngFor="
+                      let op of campo.opciones?.length ? campo.opciones : ['Opción A', 'Opción B']
+                    "
+                    class="preview-check-label"
+                  >
+                    <input type="radio" disabled /> {{ op }}
+                  </label>
+                </div>
+                <div *ngSwitchCase="'file'" class="preview-file-area">
+                  <span>📎 Seleccionar archivo...</span>
+                </div>
+                <input
+                  *ngSwitchDefault
+                  type="text"
+                  [placeholder]="campo.placeholder || ''"
+                  class="preview-input"
+                  disabled
+                />
+              </ng-container>
+
+              <small *ngIf="campo.descripcion_ayuda" class="preview-ayuda">{{
+                campo.descripcion_ayuda
+              }}</small>
+            </div>
+          </div>
+
+          <div *ngIf="camposVisiblesEnPreview.length === 0" class="preview-empty">
+            <div class="preview-empty-icon">🖼️</div>
+            <p>Sin campos visibles</p>
+            <small>Agrega campos o activa su visibilidad para ver la vista previa</small>
+          </div>
+        </div>
       </div>
     </div>
+    <!-- /pregunta-workspace -->
   </div>
 
   <!-- Buscador (visible cuando no hay pregunta seleccionada) -->
@@ -170,19 +394,97 @@
     </div>
 
     <div *ngIf="resultadosBusqueda.length > 0" class="resultados-lista">
-      <p class="resultados-count">{{ resultadosBusqueda.length }} pregunta(s) encontrada(s)</p>
+      <p class="resultados-count">
+        {{ resultadosBusqueda.length }} pregunta(s) encontrada(s) — haz clic para seleccionar
+      </p>
       <div
         *ngFor="let pregunta of resultadosBusqueda"
         class="resultado-item"
         (click)="seleccionarPregunta(pregunta)"
       >
-        <div class="resultado-texto">{{ pregunta.Pregunta }}</div>
-        <div class="resultado-meta">
-          <span *ngIf="pregunta.Modulo" class="resultado-modulo">{{ pregunta.Modulo }}</span>
-          <span *ngIf="pregunta.Submodulo" class="resultado-submodulo"
-            >/ {{ pregunta.Submodulo }}</span
-          >
+        <div class="resultado-body">
+          <div class="resultado-texto" [innerHTML]="resaltarTermino(pregunta.Pregunta)"></div>
+          <div class="resultado-breadcrumb">
+            <span *ngIf="pregunta.Modulo" class="breadcrumb-modulo">{{ pregunta.Modulo }}</span>
+            <span *ngIf="pregunta.Submodulo" class="breadcrumb-sep">›</span>
+            <span *ngIf="pregunta.Submodulo" class="breadcrumb-submodulo">{{
+              pregunta.Submodulo
+            }}</span>
+          </div>
         </div>
+        <span class="resultado-arrow">→</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de selección de tipo de formulario -->
+<div *ngIf="mostrarModalTipo && preguntaSeleccionada" class="modal-overlay">
+  <div class="modal-content modal-tipo" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div>
+        <h3>¿Qué tipo de formulario necesita esta pregunta?</h3>
+        <p class="modal-tipo-subtitulo">{{ preguntaSeleccionada.pregunta_texto }}</p>
+      </div>
+    </div>
+    <div class="modal-body modal-tipo-body">
+      <div class="tipo-opciones-grid">
+        <!-- Opción: Formulario personalizado -->
+        <div
+          class="tipo-opcion-card"
+          [class.tipo-opcion-seleccionada]="tipoFormulario === 'personalizado'"
+          (click)="tipoFormulario = 'personalizado'"
+        >
+          <div class="tipo-opcion-icono">📋</div>
+          <h4 class="tipo-opcion-titulo">Formulario personalizado</h4>
+          <p class="tipo-opcion-desc">
+            Define tú mismo los campos que necesitas recopilar. Ideal para preguntas de soporte
+            técnico, reportes de errores o solicitudes específicas.
+          </p>
+          <div class="tipo-opcion-check">
+            <div
+              class="tipo-radio"
+              [class.tipo-radio-activo]="tipoFormulario === 'personalizado'"
+            ></div>
+          </div>
+        </div>
+
+        <!-- Opción: Solicitud de acceso -->
+        <div
+          class="tipo-opcion-card"
+          [class.tipo-opcion-seleccionada]="tipoFormulario === 'solicitud_acceso'"
+          (click)="tipoFormulario = 'solicitud_acceso'"
+        >
+          <div class="tipo-opcion-icono">🔐</div>
+          <h4 class="tipo-opcion-titulo">Solicitud de acceso</h4>
+          <p class="tipo-opcion-desc">
+            Usa el formulario estándar de solicitud de acceso a plataformas (PANDORA, SICAPITAL,
+            ORFEO, etc.). El usuario será redirigido a ese formulario.
+          </p>
+          <div class="tipo-opcion-check">
+            <div
+              class="tipo-radio"
+              [class.tipo-radio-activo]="tipoFormulario === 'solicitud_acceso'"
+            ></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-tipo-acciones">
+        <button
+          *ngIf="tipoFormulario"
+          class="btn btn-secundario-tipo"
+          (click)="tipoFormulario = null"
+        >
+          Limpiar selección
+        </button>
+        <button
+          class="btn btn-primary"
+          [disabled]="!tipoFormulario || guardandoTipo"
+          (click)="confirmarTipoFormulario(tipoFormulario!)"
+        >
+          {{ guardandoTipo ? 'Guardando...' : 'Confirmar' }}
+        </button>
       </div>
     </div>
   </div>
@@ -261,103 +563,225 @@
     <!-- PASO 2: Formulario de campo -->
     <div *ngIf="campoEditando || plantillaSeleccionada" class="modal-body">
       <div *ngIf="!campoEditando" class="plantilla-volver" (click)="plantillaSeleccionada = null">
-        ← Volver a selección
+        ← Volver a selección de plantillas
       </div>
       <form (ngSubmit)="guardarCampo()">
+        <!-- Etiqueta visible (lo más importante primero) -->
+        <div class="form-group">
+          <label class="form-label-with-tooltip">
+            Etiqueta visible *
+            <span class="tooltip-wrapper">
+              <span class="tooltip-icon">ⓘ</span>
+              <span class="tooltip-text"
+                >El texto que verá el usuario sobre el campo en el formulario.</span
+              >
+            </span>
+          </label>
+          <input
+            type="text"
+            [(ngModel)]="nuevoCampo.etiqueta"
+            name="etiqueta"
+            placeholder="Ej: Número de contrato, Descripción del problema..."
+            required
+          />
+        </div>
+
         <div class="form-row">
+          <!-- Tipo de campo -->
           <div class="form-group">
-            <label>Nombre del Campo *</label>
+            <label class="form-label-with-tooltip">
+              Tipo de campo *
+              <span class="tooltip-wrapper">
+                <span class="tooltip-icon">ⓘ</span>
+                <span class="tooltip-text">Define qué tipo de dato ingresará el usuario.</span>
+              </span>
+            </label>
+            <select [(ngModel)]="nuevoCampo.tipo" name="tipo" required>
+              <option *ngFor="let tipo of tiposCampo" [value]="tipo.valor">{{ tipo.label }}</option>
+            </select>
+            <small class="tipo-descripcion" *ngIf="nuevoCampo.tipo">{{
+              getDescripcionTipo(nuevoCampo.tipo)
+            }}</small>
+          </div>
+
+          <!-- Nombre técnico -->
+          <div class="form-group">
+            <label class="form-label-with-tooltip">
+              Nombre técnico *
+              <span class="tooltip-wrapper">
+                <span class="tooltip-icon">ⓘ</span>
+                <span class="tooltip-text"
+                  >Identificador interno del campo. Solo letras, números y guiones bajos. No lo verá
+                  el usuario.</span
+                >
+              </span>
+            </label>
             <input
               type="text"
               [(ngModel)]="nuevoCampo.nombre_campo"
               name="nombre_campo"
-              placeholder="nombre_sin_espacios"
-              required
-            />
-            <small>Nombre técnico (sin espacios)</small>
-          </div>
-          <div class="form-group">
-            <label>Etiqueta Visible *</label>
-            <input
-              type="text"
-              [(ngModel)]="nuevoCampo.etiqueta"
-              name="etiqueta"
-              placeholder="Etiqueta que verá el usuario"
+              placeholder="ej: numero_contrato"
               required
             />
           </div>
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Tipo de Campo *</label>
-            <select [(ngModel)]="nuevoCampo.tipo" name="tipo" required>
-              <option *ngFor="let tipo of tiposCampo" [value]="tipo.valor">{{ tipo.label }}</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Tamaño de Columna (1-12)</label>
-            <input
-              type="number"
-              [(ngModel)]="nuevoCampo.tamano_columna"
-              name="tamano_columna"
-              min="1"
-              max="12"
-            />
-            <small>12 = ancho completo, 6 = mitad</small>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Placeholder</label>
-          <input
-            type="text"
-            [(ngModel)]="nuevoCampo.placeholder"
-            name="placeholder"
-            placeholder="Texto de ejemplo en el campo"
-          />
-        </div>
-        <div class="form-group">
-          <label>Descripción de Ayuda</label>
-          <textarea
-            [(ngModel)]="nuevoCampo.descripcion_ayuda"
-            name="descripcion_ayuda"
-            rows="2"
-            placeholder="Texto de ayuda debajo del campo"
-          ></textarea>
-        </div>
+
+        <!-- Opciones (tags input) solo para tipos que las requieren -->
         <div
           *ngIf="['select', 'radio', 'checkbox'].includes(nuevoCampo.tipo || '')"
           class="form-group"
         >
-          <label>Opciones</label>
-          <div
-            *ngFor="let opcion of nuevoCampo.opciones; let i = index; trackBy: trackByIndex"
-            class="opcion-row"
-          >
-            <input
-              type="text"
-              [(ngModel)]="nuevoCampo.opciones![i]"
-              [name]="'opcion_' + i"
-              placeholder="Opción {{ i + 1 }}"
-            />
-            <button type="button" class="btn-remove-opcion" (click)="eliminarOpcion(i)">×</button>
+          <label class="form-label-with-tooltip">
+            Opciones disponibles
+            <span class="tooltip-wrapper">
+              <span class="tooltip-icon">ⓘ</span>
+              <span class="tooltip-text"
+                >Escribe cada opción y presiona Enter o el botón "+" para agregarla.</span
+              >
+            </span>
+          </label>
+          <div class="tags-input-container">
+            <div class="tags-list">
+              <span
+                *ngFor="let opcion of nuevoCampo.opciones || []; let i = index"
+                class="tag-item"
+              >
+                {{ opcion }}
+                <button
+                  type="button"
+                  class="tag-remove"
+                  (click)="eliminarOpcion(i)"
+                  title="Eliminar opción"
+                >
+                  ×
+                </button>
+              </span>
+              <span *ngIf="!nuevoCampo.opciones?.length" class="tags-placeholder"
+                >Sin opciones — agrega abajo</span
+              >
+            </div>
+            <div class="tags-input-row">
+              <input
+                type="text"
+                [(ngModel)]="opcionNuevaTexto"
+                name="opcionNueva"
+                class="tags-text-input"
+                placeholder="Escribe una opción y presiona Enter..."
+                (keydown)="onOpcionKeydown($event)"
+              />
+              <button
+                type="button"
+                class="btn-add-tag"
+                (click)="agregarOpcionNueva()"
+                [disabled]="!opcionNuevaTexto.trim()"
+              >
+                +
+              </button>
+            </div>
+            <small class="tags-counter"
+              >{{ (nuevoCampo.opciones || []).length }} opción(es) agregada(s)</small
+            >
           </div>
-          <button type="button" class="btn btn-add-opcion" (click)="agregarOpcion()">
-            + Agregar Opción
-          </button>
         </div>
-        <div class="form-check">
-          <label>
+
+        <div class="form-group">
+          <label>Texto de ejemplo (placeholder)</label>
+          <input
+            type="text"
+            [(ngModel)]="nuevoCampo.placeholder"
+            name="placeholder"
+            placeholder="Ej: Ingrese el número de su contrato"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label-with-tooltip">
+            Texto de ayuda
+            <span class="tooltip-wrapper">
+              <span class="tooltip-icon">ⓘ</span>
+              <span class="tooltip-text"
+                >Aparece debajo del campo para guiar al usuario. Opcional pero muy útil.</span
+              >
+            </span>
+          </label>
+          <textarea
+            [(ngModel)]="nuevoCampo.descripcion_ayuda"
+            name="descripcion_ayuda"
+            rows="2"
+            placeholder="Ej: Puedes encontrar tu número de contrato en la primera página del documento"
+          ></textarea>
+        </div>
+
+        <!-- Ancho visual -->
+        <div class="form-group">
+          <label class="form-label-with-tooltip">
+            Ancho en el formulario
+            <span class="tooltip-wrapper">
+              <span class="tooltip-icon">ⓘ</span>
+              <span class="tooltip-text"
+                >Define cuánto espacio ocupa el campo en la fila. Dos campos de "Mitad" caben
+                juntos.</span
+              >
+            </span>
+          </label>
+          <div class="ancho-selector">
+            <button
+              *ngFor="let opcion of anchoOpciones"
+              type="button"
+              class="ancho-btn"
+              [class.ancho-btn-active]="nuevoCampo.tamano_columna === opcion.valor"
+              (click)="nuevoCampo.tamano_columna = opcion.valor"
+            >
+              <div class="ancho-barra-bg">
+                <div class="ancho-barra-fill" [style.width.%]="opcion.porcentaje"></div>
+              </div>
+              <span class="ancho-label">{{ opcion.label }}</span>
+              <span class="ancho-desc">{{ opcion.descripcion }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Opciones booleanas -->
+        <div class="form-checks-row">
+          <label class="form-check-label tooltip-wrapper">
             <input type="checkbox" [(ngModel)]="nuevoCampo.requerido" name="requerido" />
-            Campo Requerido
+            <span>Campo requerido</span>
+            <span class="tooltip-icon">ⓘ</span>
+            <span class="tooltip-text tooltip-text-left"
+              >Si está activo, el usuario no podrá enviar el formulario sin completar este
+              campo.</span
+            >
+          </label>
+          <label class="form-check-label tooltip-wrapper">
+            <input type="checkbox" [(ngModel)]="nuevoCampo.visible" name="visible" />
+            <span>Visible en el formulario</span>
+            <span class="tooltip-icon">ⓘ</span>
+            <span class="tooltip-text tooltip-text-left"
+              >Si está desactivado, el campo no aparecerá en el formulario del usuario.</span
+            >
           </label>
         </div>
+
         <div class="form-actions">
           <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
           <button type="submit" class="btn btn-primary">
-            {{ campoEditando ? 'Actualizar' : 'Crear Campo' }}
+            {{ campoEditando ? '✅ Guardar cambios' : '➕ Crear campo' }}
           </button>
         </div>
       </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de confirmación para eliminar -->
+<div *ngIf="mostrarModalConfirmar" class="modal-overlay" (click)="cancelarConfirmacion()">
+  <div class="modal-content modal-confirmar" (click)="$event.stopPropagation()">
+    <div class="modal-confirmar-icono">🗑️</div>
+    <h3 class="modal-confirmar-titulo">Confirmar eliminación</h3>
+    <p class="modal-confirmar-texto">{{ textoConfirmar }}</p>
+    <div class="modal-confirmar-acciones">
+      <button class="btn btn-secondary" (click)="cancelarConfirmacion()">Cancelar</button>
+      <button class="btn btn-danger" (click)="ejecutarConfirmacion()">Sí, eliminar</button>
     </div>
   </div>
 </div>

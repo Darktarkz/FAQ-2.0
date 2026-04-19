@@ -137,6 +137,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Gestión de campos personalizados de formularios (solo admin)
     Route::prefix('formulario-campos')->group(function () {
         Route::get('/pregunta/{preguntaId}', [FormularioCampoController::class, 'getPorPregunta']); // GET /api/formulario-campos/pregunta/{id}
+        Route::put('/pregunta/{preguntaId}/tipo', [FormularioCampoController::class, 'setTipoPregunta']); // PUT /api/formulario-campos/pregunta/{id}/tipo
         Route::post('/', [FormularioCampoController::class, 'store']);                        // POST /api/formulario-campos (crear campo)
         Route::put('/{id}', [FormularioCampoController::class, 'update']);                    // PUT /api/formulario-campos/{id} (actualizar campo)
         Route::delete('/{id}', [FormularioCampoController::class, 'destroy']);                // DELETE /api/formulario-campos/{id} (eliminar campo)

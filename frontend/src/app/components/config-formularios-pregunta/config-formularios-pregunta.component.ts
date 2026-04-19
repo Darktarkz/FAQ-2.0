@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import { PreguntaService, Pregunta } from '../../services/pregunta.service';
 import { FormularioCampoService, FormularioCampo } from '../../services/formulario-campo.service';
+import { AuthService } from '../../services/auth.service';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
@@ -38,20 +39,40 @@ export class ConfigFormulariosPreg implements OnInit {
   plantillasSeleccionadas: Set<string> = new Set();
   guardandoPlantillas: boolean = false;
 
+  // Tipo de formulario de la pregunta
+  mostrarModalTipo: boolean = false;
+  tipoFormulario: 'personalizado' | 'solicitud_acceso' | null = null;
+  guardandoTipo: boolean = false;
+
+  // Modal confirmación visual
+  mostrarModalConfirmar: boolean = false;
+  textoConfirmar: string = '';
+  private accionConfirmar: (() => void) | null = null;
+
+  // Tags de opciones
+  opcionNuevaTexto: string = '';
+
   private busquedaSubject = new Subject<string>();
 
   tiposCampo = [
-    { valor: 'text', label: 'Texto' },
-    { valor: 'email', label: 'Correo Electrónico' },
-    { valor: 'tel', label: 'Teléfono' },
-    { valor: 'number', label: 'Número' },
-    { valor: 'date', label: 'Fecha' },
-    { valor: 'datetime-local', label: 'Fecha y Hora' },
-    { valor: 'textarea', label: 'Área de Texto' },
-    { valor: 'select', label: 'Lista Desplegable' },
-    { valor: 'checkbox', label: 'Casilla de Verificación' },
-    { valor: 'radio', label: 'Opción Múltiple' },
-    { valor: 'file', label: 'Archivo' }
+    { valor: 'text', label: 'Texto corto', descripcion: 'Una sola línea de texto libre' },
+    { valor: 'email', label: 'Correo electrónico', descripcion: 'Valida el formato email automáticamente' },
+    { valor: 'tel', label: 'Teléfono', descripcion: 'Campo para números telefónicos' },
+    { valor: 'number', label: 'Número', descripcion: 'Solo acepta valores numéricos' },
+    { valor: 'date', label: 'Fecha', descripcion: 'Selector de fecha (día/mes/año)' },
+    { valor: 'datetime-local', label: 'Fecha y hora', descripcion: 'Selector de fecha y hora combinado' },
+    { valor: 'textarea', label: 'Texto largo', descripcion: 'Área para respuestas extensas o descripciones' },
+    { valor: 'select', label: 'Lista desplegable', descripcion: 'El usuario elige una opción de una lista' },
+    { valor: 'checkbox', label: 'Selección múltiple', descripcion: 'El usuario puede marcar varias opciones' },
+    { valor: 'radio', label: 'Opción única', descripcion: 'El usuario elige solo una opción entre varias' },
+    { valor: 'file', label: 'Adjuntar archivo', descripcion: 'Permite subir documentos o imágenes' }
+  ];
+
+  anchoOpciones = [
+    { valor: 3, label: 'Cuarto', porcentaje: 25, descripcion: '1/4 del ancho' },
+    { valor: 4, label: 'Tercio', porcentaje: 33, descripcion: '1/3 del ancho' },
+    { valor: 6, label: 'Mitad', porcentaje: 50, descripcion: '1/2 del ancho' },
+    { valor: 12, label: 'Completo', porcentaje: 100, descripcion: 'Ancho total de la fila' },
   ];
 
   camposPredefinidos = [
@@ -71,7 +92,8 @@ export class ConfigFormulariosPreg implements OnInit {
 
   constructor(
     private preguntaService: PreguntaService,
-    private formularioCampoService: FormularioCampoService
+    private formularioCampoService: FormularioCampoService,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -93,7 +115,12 @@ export class ConfigFormulariosPreg implements OnInit {
   buscarPreguntas(term: string): void {
     this.preguntaService.searchPreguntas(term).subscribe({
       next: (preguntas) => {
-        this.resultadosBusqueda = preguntas.slice(0, 20);
+        const isAdmin = this.authService.isAdmin();
+        const allowedIds = this.authService.getAllowedModuleIds();
+        const filtradas = isAdmin
+          ? preguntas
+          : preguntas.filter(p => p.Idmodulo != null && allowedIds.includes(p.Idmodulo));
+        this.resultadosBusqueda = filtradas.slice(0, 20);
         this.cargando = false;
       },
       error: () => {
@@ -123,6 +150,14 @@ export class ConfigFormulariosPreg implements OnInit {
       next: (response) => {
         if (response.success) {
           this.preguntaSeleccionada!.camposPersonalizados = response.campos || [];
+          // Si ya hay tipo guardado en el backend, usarlo directamente sin mostrar modal
+          if (response.tipo) {
+            this.tipoFormulario = response.tipo;
+          } else {
+            // Primera vez: abrir modal de selección
+            this.tipoFormulario = null;
+            this.mostrarModalTipo = true;
+          }
         }
         this.cargandoCampos = false;
       },
@@ -133,10 +168,40 @@ export class ConfigFormulariosPreg implements OnInit {
     });
   }
 
+  confirmarTipoFormulario(tipo: 'personalizado' | 'solicitud_acceso'): void {
+    if (!this.preguntaSeleccionada) return;
+    this.guardandoTipo = true;
+    this.formularioCampoService.setTipoPregunta(this.preguntaSeleccionada.pregunta_id, tipo).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.tipoFormulario = tipo;
+          this.mostrarModalTipo = false;
+          this.exito = tipo === 'solicitud_acceso'
+            ? 'Formulario de solicitud de acceso asignado'
+            : 'Formulario personalizado configurado';
+          setTimeout(() => this.exito = '', 3000);
+        } else {
+          this.error = response.message || 'Error al guardar tipo';
+        }
+        this.guardandoTipo = false;
+      },
+      error: () => {
+        this.error = 'Error al guardar tipo de formulario';
+        this.guardandoTipo = false;
+      }
+    });
+  }
+
+  cambiarTipoFormulario(): void {
+    this.mostrarModalTipo = true;
+  }
+
   limpiarSeleccion(): void {
     this.preguntaSeleccionada = null;
     this.terminoBusqueda = '';
     this.resultadosBusqueda = [];
+    this.tipoFormulario = null;
+    this.mostrarModalTipo = false;
   }
 
   // ========== MODAL CAMPO ==========
@@ -314,20 +379,40 @@ export class ConfigFormulariosPreg implements OnInit {
   }
 
   eliminarCampo(campo: FormularioCampo): void {
-    if (!confirm(`¿Estás seguro de eliminar el campo "${campo.etiqueta}"?`)) return;
+    this.pedirConfirmacion(
+      `¿Eliminar el campo "${campo.etiqueta}"? Esta acción no se puede deshacer.`,
+      () => {
+        this.formularioCampoService.eliminar(campo.id!).subscribe({
+          next: (response) => {
+            if (response.success) {
+              this.exito = 'Campo eliminado exitosamente';
+              this.cargarCampos();
+              setTimeout(() => this.exito = '', 3000);
+            } else {
+              this.error = response.message || 'Error al eliminar campo';
+            }
+          },
+          error: () => { this.error = 'Error al eliminar el campo'; }
+        });
+      }
+    );
+  }
 
-    this.formularioCampoService.eliminar(campo.id!).subscribe({
-      next: (response) => {
-        if (response.success) {
-          this.exito = 'Campo eliminado exitosamente';
-          this.cargarCampos();
-          setTimeout(() => this.exito = '', 3000);
-        } else {
-          this.error = response.message || 'Error al eliminar campo';
-        }
-      },
-      error: () => { this.error = 'Error al eliminar el campo'; }
-    });
+  pedirConfirmacion(texto: string, accion: () => void): void {
+    this.textoConfirmar = texto;
+    this.accionConfirmar = accion;
+    this.mostrarModalConfirmar = true;
+  }
+
+  ejecutarConfirmacion(): void {
+    if (this.accionConfirmar) this.accionConfirmar();
+    this.cancelarConfirmacion();
+  }
+
+  cancelarConfirmacion(): void {
+    this.mostrarModalConfirmar = false;
+    this.textoConfirmar = '';
+    this.accionConfirmar = null;
   }
 
   toggleVisibilidad(campo: FormularioCampo): void {
@@ -406,6 +491,25 @@ export class ConfigFormulariosPreg implements OnInit {
     return this.preguntaSeleccionada?.camposPersonalizados || [];
   }
 
+  get camposVisiblesEnPreview(): FormularioCampo[] {
+    return this.camposOrdenados.filter(c => c.visible !== false);
+  }
+
+  agregarOpcionNueva(): void {
+    const texto = this.opcionNuevaTexto.trim();
+    if (!texto) return;
+    if (!this.nuevoCampo.opciones) this.nuevoCampo.opciones = [];
+    (this.nuevoCampo.opciones as string[]).push(texto);
+    this.opcionNuevaTexto = '';
+  }
+
+  onOpcionKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      this.agregarOpcionNueva();
+    }
+  }
+
   agregarOpcion(): void {
     if (!this.nuevoCampo.opciones) this.nuevoCampo.opciones = [];
     (this.nuevoCampo.opciones as string[]).push('');
@@ -417,5 +521,15 @@ export class ConfigFormulariosPreg implements OnInit {
 
   trackByIndex(index: number): number {
     return index;
+  }
+
+  resaltarTermino(texto: string): string {
+    if (!this.terminoBusqueda || this.terminoBusqueda.trim().length < 2) return texto;
+    const escaped = this.terminoBusqueda.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return texto.replace(new RegExp(`(${escaped})`, 'gi'), '<mark class="highlight-term">$1</mark>');
+  }
+
+  getDescripcionTipo(valor: string): string {
+    return this.tiposCampo.find(t => t.valor === valor)?.descripcion || '';
   }
 }

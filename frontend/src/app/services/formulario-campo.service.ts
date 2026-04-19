@@ -24,6 +24,7 @@ interface ApiResponse {
   campos?: FormularioCampo[];
   campo?: FormularioCampo;
   template_id?: number;
+  tipo?: 'personalizado' | 'solicitud_acceso';
   origen_modulo_id?: number;
   message?: string;
   errors?: any;
@@ -83,5 +84,12 @@ export class FormularioCampoService {
    */
   reordenar(campos: { id: number; orden: number }[]): Observable<ApiResponse> {
     return this.http.post<ApiResponse>(`${this.apiUrl}/reordenar`, { campos });
+  }
+
+  /**
+   * Establecer el tipo de formulario de una pregunta (personalizado | solicitud_acceso).
+   */
+  setTipoPregunta(preguntaId: number, tipo: 'personalizado' | 'solicitud_acceso'): Observable<ApiResponse> {
+    return this.http.put<ApiResponse>(`${this.apiUrl}/pregunta/${preguntaId}/tipo`, { tipo });
   }
 }

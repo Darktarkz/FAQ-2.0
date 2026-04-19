@@ -27,12 +27,17 @@ class FormularioCampoController extends Controller
             if ($request->filled('pregunta_id')) {
                 $template = FormularioTemplate::porPregunta($request->input('pregunta_id'));
                 if ($template) {
-                    // Solo usar si tiene al menos un campo visible; si no, hacer fallback al módulo
-                    $tieneCamposVisibles = $template->campos()->where('visible', 1)->exists();
-                    if ($tieneCamposVisibles) {
+                    // solicitud_acceso no tiene campos por diseño: siempre usarlo
+                    if ($template->tipo === 'solicitud_acceso') {
                         $origenTemplate = 'pregunta';
                     } else {
-                        $template = null; // Fallback al módulo
+                        // Para tipo personalizado: usar solo si tiene campos visibles, si no fallback al módulo
+                        $tieneCamposVisibles = $template->campos()->where('visible', 1)->exists();
+                        if ($tieneCamposVisibles) {
+                            $origenTemplate = 'pregunta';
+                        } else {
+                            $template = null; // Fallback al módulo
+                        }
                     }
                 }
             }
@@ -73,6 +78,7 @@ class FormularioCampoController extends Controller
             return response()->json([
                 'success'          => true,
                 'template_id'      => $template->id,
+                'tipo'             => $template->tipo ?? 'personalizado',
                 'origen_template'  => $origenTemplate,
                 'origen_modulo_id' => $origenModuloId,
                 'campos'           => $campos
@@ -99,6 +105,7 @@ class FormularioCampoController extends Controller
                 return response()->json([
                     'success' => true,
                     'template_id' => null,
+                    'tipo' => null,
                     'campos' => []
                 ]);
             }
@@ -108,12 +115,56 @@ class FormularioCampoController extends Controller
             return response()->json([
                 'success' => true,
                 'template_id' => $template->id,
+                'tipo' => $template->tipo ?? 'personalizado',
                 'campos' => $campos
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Establecer el tipo de formulario de una pregunta (personalizado | solicitud_acceso).
+     * Crea el FormularioTemplate si no existe.
+     */
+    public function setTipoPregunta(Request $request, $preguntaId)
+    {
+        $validator = Validator::make($request->all(), [
+            'tipo' => 'required|in:personalizado,solicitud_acceso',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        try {
+            $template = FormularioTemplate::porPregunta($preguntaId);
+
+            if (!$template) {
+                $template = FormularioTemplate::create([
+                    'nombre'            => 'Formulario Pregunta ' . $preguntaId,
+                    'descripcion'       => 'Formulario específico de pregunta',
+                    'modulos_asignados' => [],
+                    'pregunta_id'       => (int) $preguntaId,
+                    'activo'            => true,
+                    'tipo'              => $request->tipo,
+                ]);
+            } else {
+                $template->update(['tipo' => $request->tipo]);
+            }
+
+            return response()->json([
+                'success'  => true,
+                'tipo'     => $template->tipo,
+                'template' => $template,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al guardar tipo: ' . $e->getMessage()
             ], 500);
         }
     }

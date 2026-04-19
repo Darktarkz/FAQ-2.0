@@ -15,6 +15,7 @@ class FormularioTemplate extends Model
         'modulos_asignados',
         'pregunta_id',
         'activo',
+        'tipo',
     ];
 
     protected $casts = [

@@ -12,8 +12,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->enum('tipo', ['voto_util', 'voto_no_util']);
-            $table->unsignedInteger('pregunta_id');
-            $table->integer('modulo_id')->nullable();
+            $table->unsignedBigInteger('pregunta_id');
+            $table->unsignedBigInteger('modulo_id')->nullable();
             $table->string('mensaje');
             $table->boolean('leida')->default(false);
             $table->timestamps();

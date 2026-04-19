@@ -1,6 +1,7 @@
 import { Component, Input, OnInit, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { TicketService, Ticket } from '../../services/ticket.service';
 import { FormularioCampoService, FormularioCampo } from '../../services/formulario-campo.service';
 
@@ -32,7 +33,8 @@ export class FormularioSoporteComponent implements OnInit, OnChanges {
 
   constructor(
     private ticketService: TicketService,
-    private formularioCampoService: FormularioCampoService
+    private formularioCampoService: FormularioCampoService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -54,6 +56,11 @@ export class FormularioSoporteComponent implements OnInit, OnChanges {
     // Si hay preguntaId, el backend aplica fallback pregunta → módulo automáticamente
     this.formularioCampoService.getPorModulo(this.moduloId, false, this.preguntaId || undefined).subscribe({
       next: (response) => {
+        // Si la pregunta tiene asignado el formulario de solicitud de acceso, redirigir
+        if (response.success && response.tipo === 'solicitud_acceso') {
+          this.router.navigate(['/solicitud-accesos']);
+          return;
+        }
         if (response.success && response.campos) {
           this.camposPersonalizados = response.campos;
           
