@@ -13,6 +13,8 @@ use App\Http\Controllers\ModuloFormularioConfigController;
 use App\Http\Controllers\MetricasController;
 use App\Http\Controllers\DependenciaController;
 use App\Http\Controllers\SolicitudAccesoController;
+use App\Http\Controllers\SearchController;
+use App\Http\Controllers\NotificacionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -157,5 +159,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [SolicitudAccesoController::class, 'index']);             // GET /api/solicitudes-acceso
         Route::get('/{id}', [SolicitudAccesoController::class, 'show']);          // GET /api/solicitudes-acceso/{id}
         Route::put('/{id}/estado', [SolicitudAccesoController::class, 'updateEstado']); // PUT /api/solicitudes-acceso/{id}/estado
+    });
+
+    // Búsqueda global en el panel admin
+    Route::get('/admin/search', [SearchController::class, 'search']);            // GET /api/admin/search?q=
+
+    // Notificaciones de votos
+    Route::prefix('notificaciones')->group(function () {
+        Route::get('/', [NotificacionController::class, 'index']);                    // GET /api/notificaciones
+        Route::put('/leer-todas', [NotificacionController::class, 'marcarTodasLeidas']); // PUT /api/notificaciones/leer-todas
+        Route::put('/{id}/leer', [NotificacionController::class, 'marcarLeida']);    // PUT /api/notificaciones/{id}/leer
     });
 });

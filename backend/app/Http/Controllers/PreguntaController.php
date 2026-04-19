@@ -36,10 +36,12 @@ class PreguntaController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'Idmodulo' => 'required|integer|exists:modulos,id',
+            'Idmodulo'   => 'required|integer|exists:modulos,id',
             'Aplicativo' => 'nullable|string|max:255',
-            'Pregunta' => 'required|string',
-            'Respuesta' => 'required|string',
+            'Modulo'     => 'nullable|string|max:255',
+            'Submodulo'  => 'nullable|string|max:255',
+            'Pregunta'   => 'required|string',
+            'Respuesta'  => 'required|string',
         ]);
 
         $this->authorizeModulo($request->user(), (int) $validated['Idmodulo']);
@@ -86,10 +88,12 @@ class PreguntaController extends Controller
         }
 
         $validated = $request->validate([
-            'Idmodulo' => 'required|integer|exists:modulos,id',
+            'Idmodulo'   => 'required|integer|exists:modulos,id',
             'Aplicativo' => 'nullable|string|max:255',
-            'Pregunta' => 'required|string',
-            'Respuesta' => 'required|string',
+            'Modulo'     => 'nullable|string|max:255',
+            'Submodulo'  => 'nullable|string|max:255',
+            'Pregunta'   => 'required|string',
+            'Respuesta'  => 'required|string',
         ]);
 
         $this->authorizeModulo($request->user(), (int) $validated['Idmodulo']);

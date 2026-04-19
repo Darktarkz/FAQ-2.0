@@ -94,6 +94,15 @@
         📌 Hereda formulario de <strong>{{ getNombreModulo(moduloConfig.origenModuloId) }}</strong>
       </div>
 
+      <!-- Banner sin template -->
+      <div
+        *ngIf="!moduloConfig.origenModuloId"
+        class="herencia-info"
+        style="background: #fff8e1; border-color: #f9a825; color: #795548"
+      >
+        ⚠️ Sin formulario configurado aún. Agrega campos personalizados para este módulo.
+      </div>
+
       <!-- Info y Campos Personalizados -->
       <div class="info-campos-fijos">
         <p class="info-text">

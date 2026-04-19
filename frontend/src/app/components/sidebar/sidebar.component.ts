@@ -1,14 +1,15 @@
 import { Component, OnInit, ViewChild, TemplateRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, NgIf, NgFor } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
 import { CategoriaService, Modulo } from '../../services/categoria.service';
 import { AuthService } from '../../services/auth.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [FormsModule, CommonModule, RouterModule],
+  imports: [FormsModule, CommonModule, NgIf, NgFor, RouterModule],
   templateUrl: './sidebar.component.html',
   styleUrls: ['./sidebar.component.css']
 })
@@ -30,7 +31,8 @@ export class SidebarComponent implements OnInit {
   constructor(
     private categoriaService: CategoriaService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private toast: ToastService
   ) {}
 
   ngOnInit(): void {
@@ -93,7 +95,7 @@ export class SidebarComponent implements OnInit {
         this.loading = false;
         this.closeAddModuloModal();
         this.cargarModulos();
-        alert('✅ Módulo creado exitosamente');
+        this.toast.success('Módulo creado exitosamente');
       },
       error: (err) => {
         console.error('Error al crear módulo:', err);

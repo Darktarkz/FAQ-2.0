@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Notificacion;
 use App\Models\VotoPregunta;
 use App\Models\Pregunta;
 use App\Models\Ticket;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 
 class MetricasController extends Controller
 {
@@ -29,6 +32,40 @@ class MetricasController extends Controller
             ['pregunta_id' => $request->pregunta_id, 'session_id' => $sessionId, 'ip' => $ip],
             ['voto' => $request->voto]
         );
+
+        // ── Notificaciones a usuarios con permisos sobre el módulo ──
+        $pregunta = Pregunta::find($request->pregunta_id);
+        if ($pregunta) {
+            $moduloId = $pregunta->Idmodulo;
+            $tipo     = $request->voto === 'util' ? 'voto_util' : 'voto_no_util';
+            $emoji    = $request->voto === 'util' ? '👍' : '👎';
+
+            // Nombre del módulo para el mensaje
+            $modulo = \App\Models\Modulo::find($moduloId);
+            $moduloNombre = $modulo?->nombre ?? 'Módulo #' . $moduloId;
+            $mensaje = "{$emoji} Voto " . ($request->voto === 'util' ? 'útil' : 'no útil')
+                     . " en [Módulo: {$moduloNombre}] - Pregunta #{$request->pregunta_id}";
+
+            // Admins + usuarios con permiso directo en el módulo
+            $adminIds   = User::where('is_admin', true)->pluck('id');
+            $editorIds  = DB::table('modulo_user')->where('modulo_id', $moduloId)->pluck('user_id');
+            $destinatarios = $adminIds->merge($editorIds)->unique();
+
+            $notificaciones = $destinatarios->map(fn ($userId) => [
+                'user_id'     => $userId,
+                'tipo'        => $tipo,
+                'pregunta_id' => $request->pregunta_id,
+                'modulo_id'   => $moduloId,
+                'mensaje'     => $mensaje,
+                'leida'       => false,
+                'created_at'  => now(),
+                'updated_at'  => now(),
+            ])->values()->all();
+
+            if (!empty($notificaciones)) {
+                Notificacion::insert($notificaciones);
+            }
+        }
 
         // Retornar conteos actualizados
         $util    = VotoPregunta::where('pregunta_id', $request->pregunta_id)->where('voto', 'util')->count();

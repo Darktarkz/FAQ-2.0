@@ -6,6 +6,7 @@ import { CategoriaService } from '../../services/categoria.service';
 import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-admin-modulos',
@@ -98,11 +99,13 @@ import { environment } from '../../../environments/environment';
         </div>
 
         <div class="no-results" *ngIf="consultaRealizada && modulosFiltrados.length === 0">
+          <span class="no-results-icon">📦</span>
           <p>No se encontraron módulos con los filtros seleccionados</p>
           <small>Intenta modificar los criterios de búsqueda</small>
         </div>
 
         <div class="no-results" *ngIf="!consultaRealizada">
+          <span class="no-results-icon">🔍</span>
           <p>Utiliza los filtros para buscar módulos</p>
           <small>Selecciona al menos una categoría y presiona "Consultar"</small>
         </div>
@@ -268,45 +271,56 @@ import { environment } from '../../../environments/environment';
     </div>
   `,
   styles: [`
+    /* ── Base ── */
     .admin-modulos {
       max-width: 1400px;
       margin: 0 auto;
-      padding: 20px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      padding: 28px 24px;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      animation: fadeInPage 0.35s ease-out;
+    }
+    @keyframes fadeInPage {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
 
-    /* ENCABEZADO */
+    /* ── ENCABEZADO ── */
     .page-header {
-      margin-bottom: 40px;
+      margin-bottom: 32px;
+      padding-left: 16px;
+      border-left: 4px solid #65558F;
 
       h2 {
-        margin: 0 0 10px 0;
-        color: #2c3e50;
-        font-size: 32px;
-        font-weight: 700;
+        margin: 0 0 6px 0;
+        color: #1A1A2E;
+        font-size: 28px;
+        font-weight: 800;
+        letter-spacing: -0.5px;
       }
 
       .subtitle {
         margin: 0;
-        color: #7f8c8d;
-        font-size: 14px;
+        color: #8A8FA8;
+        font-size: 13px;
+        font-weight: 500;
       }
     }
 
-    /* SECCIÓN DE FILTROS */
+    /* ── SECCIÓN DE FILTROS ── */
     .filter-section {
-      background: #39275c;
-      padding: 30px;
-      border-radius: 12px;
-      margin-bottom: 40px;
-      box-shadow: 0 10px 30px rgba(101, 85, 143, 0.2);
+      background: linear-gradient(135deg, #39275c 0%, #4a3470 100%);
+      padding: 28px 30px;
+      border-radius: 18px;
+      margin-bottom: 28px;
+      box-shadow: 0 8px 32px rgba(57, 39, 92, 0.28);
     }
 
     .section-title {
       color: white;
-      font-size: 18px;
-      font-weight: 600;
+      font-size: 15px;
+      font-weight: 700;
       margin: 0 0 20px 0;
+      letter-spacing: 0.2px;
     }
 
     .filter-form {
@@ -323,41 +337,39 @@ import { environment } from '../../../environments/environment';
 
     .form-group label {
       display: block;
-      margin-bottom: 8px;
-      color: rgba(255, 255, 255, 0.95);
+      margin-bottom: 7px;
+      color: rgba(255, 255, 255, 0.9);
       font-weight: 600;
-      font-size: 13px;
+      font-size: 11px;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.7px;
     }
 
     select, input, textarea {
-      padding: 12px 14px;
-      border: 2px solid #000000;
-      border-radius: 6px;
+      padding: 11px 14px;
+      border: 1.5px solid rgba(255,255,255,0.15);
+      border-radius: 10px;
       font-size: 14px;
       font-family: inherit;
       transition: all 0.2s ease;
-      background-color: #fafafa;
-      color: #2c3e50;
+      background-color: rgba(255,255,255,0.97);
+      color: #1A1A2E;
 
       &:hover {
-        border-color: #333333;
+        border-color: rgba(255,255,255,0.4);
       }
 
       &:focus {
         outline: none;
-        border-color: #65558F;
-        border-width: 3px;
+        border-color: white;
+        box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.25);
         background-color: white;
-        box-shadow: 0 0 0 3px rgba(101, 85, 143, 0.2);
       }
 
       &:disabled {
-        background-color: #f0f0f0;
+        background-color: rgba(255,255,255,0.45);
         cursor: not-allowed;
         opacity: 0.6;
-        border-color: #cccccc;
       }
     }
 
@@ -370,15 +382,15 @@ import { environment } from '../../../environments/environment';
 
     input[type="file"] {
       padding: 10px;
-      background: white;
+      background: rgba(255,255,255,0.95);
       cursor: pointer;
     }
 
     .help-text {
       display: block;
       margin-top: 6px;
-      font-size: 12px;
-      color: rgba(255, 255, 255, 0.7);
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.65);
       font-style: italic;
     }
 
@@ -391,7 +403,7 @@ import { environment } from '../../../environments/environment';
     .icon-preview {
       max-width: 150px;
       max-height: 150px;
-      border-radius: 8px;
+      border-radius: 10px;
       border: 2px solid rgba(255, 255, 255, 0.3);
       object-fit: contain;
       background: white;
@@ -402,14 +414,14 @@ import { environment } from '../../../environments/environment';
       position: absolute;
       top: -8px;
       right: -8px;
-      background: #f44336;
+      background: #EF5350;
       color: white;
       border: none;
       border-radius: 50%;
-      width: 28px;
-      height: 28px;
+      width: 26px;
+      height: 26px;
       cursor: pointer;
-      font-size: 16px;
+      font-size: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -417,7 +429,7 @@ import { environment } from '../../../environments/environment';
       transition: all 0.2s ease;
 
       &:hover {
-        background: #da190b;
+        background: #C62828;
         transform: scale(1.1);
       }
     }
@@ -428,140 +440,129 @@ import { environment } from '../../../environments/environment';
       gap: 12px;
       justify-content: flex-start;
       flex-wrap: wrap;
-      margin-top: 10px;
+      margin-top: 6px;
     }
 
-    /* BOTONES */
+    /* ── BOTONES ── */
     .btn-consultar, .btn-limpiar, .btn-add-question, .btn-edit, .btn-delete, .btn-save, .btn-cancel, .btn-close {
-      padding: 11px 24px;
+      padding: 10px 22px;
       border: none;
-      border-radius: 6px;
+      border-radius: 10px;
       cursor: pointer;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      font-family: inherit;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       display: inline-flex;
       align-items: center;
-      gap: 8px;
+      gap: 7px;
       white-space: nowrap;
 
-      span {
-        font-size: 16px;
-      }
+      span { font-size: 15px; }
 
       &:hover {
         transform: translateY(-2px);
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
       }
 
-      &:active {
-        transform: translateY(0);
-      }
+      &:active { transform: translateY(0); }
     }
 
     .btn-consultar {
-      background-color: white;
+      background: white;
       color: #65558F;
       font-weight: 700;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 
-      &:hover {
-        background-color: #f0f0f0;
-      }
+      &:hover { background: #F5F3F9; }
     }
 
     .btn-limpiar {
-      background-color: rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.12);
       color: white;
-      border: 2px solid white;
+      border: 1.5px solid rgba(255,255,255,0.5);
 
-      &:hover {
-        background-color: rgba(255, 255, 255, 0.3);
-      }
+      &:hover { background: rgba(255, 255, 255, 0.22); }
     }
 
     .btn-add-question {
-      background-color: #4CAF50;
+      background: linear-gradient(135deg, #43A047, #2E7D32);
       color: white;
+      box-shadow: 0 3px 10px rgba(46,125,50,0.3);
 
-      &:hover {
-        background-color: #45a049;
-      }
+      &:hover { box-shadow: 0 6px 18px rgba(46,125,50,0.35); }
     }
 
     .btn-edit {
-      background-color: #2196F3;
+      background: linear-gradient(135deg, #2196F3, #1565C0);
       color: white;
-      padding: 8px 16px;
+      padding: 7px 15px;
       font-size: 12px;
+      box-shadow: 0 2px 6px rgba(33,150,243,0.25);
 
-      &:hover {
-        background-color: #0b7dda;
-      }
+      &:hover { box-shadow: 0 5px 14px rgba(33,150,243,0.35); }
     }
 
     .btn-delete {
-      background-color: #f44336;
+      background: linear-gradient(135deg, #EF5350, #C62828);
       color: white;
-      padding: 8px 16px;
+      padding: 7px 15px;
       font-size: 12px;
+      box-shadow: 0 2px 6px rgba(239,83,80,0.25);
 
-      &:hover {
-        background-color: #da190b;
-      }
+      &:hover { box-shadow: 0 5px 14px rgba(239,83,80,0.35); }
     }
 
     .btn-save {
-      background-color: #65558F;
+      background: linear-gradient(135deg, #65558F, #4a3470);
       color: white;
+      box-shadow: 0 3px 10px rgba(101,85,143,0.3);
 
-      &:hover {
-        background-color: #5F448F;
-      }
+      &:hover { box-shadow: 0 6px 18px rgba(101,85,143,0.38); }
     }
 
     .btn-cancel {
-      background-color: #e0e0e0;
-      color: #333;
+      background: #F0F0F5;
+      color: #5A5A72;
 
-      &:hover {
-        background-color: #d0d0d0;
-      }
+      &:hover { background: #E4E4EE; }
     }
 
-    /* SECCIÓN DE RESULTADOS */
+    /* ── SECCIÓN DE RESULTADOS ── */
     .results-section {
       background: white;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+      padding: 28px 30px;
+      border-radius: 18px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
     }
 
     .results-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 30px;
-      padding-bottom: 20px;
-      border-bottom: 2px solid #f0f0f0;
+      margin-bottom: 26px;
+      padding-bottom: 18px;
+      border-bottom: 1.5px solid #F0F0F8;
 
       .header-info {
         display: flex;
         align-items: center;
-        gap: 15px;
+        gap: 14px;
 
         h3 {
           margin: 0;
-          color: #2c3e50;
-          font-size: 20px;
+          color: #1A1A2E;
+          font-size: 17px;
+          font-weight: 700;
         }
 
         .count-badge {
-          background-color: #65558F;
-          color: white;
-          padding: 6px 14px;
+          background: #F0EDFF;
+          color: #65558F;
+          padding: 5px 13px;
           border-radius: 20px;
           font-size: 12px;
-          font-weight: 600;
+          font-weight: 700;
         }
       }
     }
@@ -569,43 +570,51 @@ import { environment } from '../../../environments/environment';
     .no-results {
       text-align: center;
       padding: 60px 20px;
-      color: #7f8c8d;
+      color: #8A8FA8;
+
+      .no-results-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+        display: block;
+        opacity: 0.7;
+      }
 
       p {
-        margin: 0 0 10px 0;
-        font-size: 18px;
-        font-weight: 500;
+        margin: 0 0 8px 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: #3D3D5C;
       }
 
       small {
         display: block;
-        color: #95a5a6;
+        color: #B0B5C9;
         font-size: 13px;
       }
     }
 
-    /* LISTA DE MÓDULOS */
+    /* ── LISTA DE MÓDULOS ── */
     .modulos-lista {
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 12px;
     }
 
     .modulo-item {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      padding: 20px;
-      border: 1px solid #e8ecf1;
-      border-left: 4px solid #65558F;
-      border-radius: 8px;
-      background-color: #fafbfc;
-      transition: all 0.3s ease;
+      padding: 18px 20px;
+      border: 1px solid #EBEBF5;
+      border-radius: 16px;
+      background: white;
+      transition: all 0.25s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 
       &:hover {
-        background-color: #f5f8fb;
-        border-left-color: #B35C9A;
-        box-shadow: 0 4px 12px rgba(101, 85, 143, 0.1);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(101, 85, 143, 0.12);
+        border-color: #D5CEEF;
       }
     }
 
@@ -618,36 +627,43 @@ import { environment } from '../../../environments/environment';
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
 
       .numero {
-        font-size: 18px;
-        font-weight: 700;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: #F0EDFF;
         color: #65558F;
-        min-width: 30px;
+        font-size: 12px;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
       }
 
       .modulo-meta {
         display: flex;
-        gap: 10px;
+        gap: 8px;
         align-items: center;
         flex-wrap: wrap;
 
         .id-badge {
-          background-color: #ecf0f1;
-          color: #7f8c8d;
-          padding: 4px 10px;
-          border-radius: 4px;
+          background: #F5F5FA;
+          color: #8A8FA8;
+          padding: 3px 10px;
+          border-radius: 20px;
           font-size: 11px;
           font-weight: 600;
           font-family: 'Monaco', monospace;
         }
 
         .jerarquia-badge {
-          background-color: #EBE9F2;
-          color: #5F448F;
-          padding: 4px 12px;
-          border-radius: 4px;
+          background: #F0EDFF;
+          color: #65558F;
+          padding: 3px 12px;
+          border-radius: 20px;
           font-size: 11px;
           font-weight: 600;
         }
@@ -655,106 +671,102 @@ import { environment } from '../../../environments/environment';
     }
 
     .modulo-text, .descripcion-text {
-      margin-bottom: 12px;
+      margin-bottom: 10px;
       line-height: 1.6;
-      color: #2c3e50;
+      color: #3D3D5C;
       font-size: 14px;
 
       strong {
         color: #65558F;
-        margin-right: 8px;
+        margin-right: 6px;
         font-weight: 700;
       }
     }
 
     .descripcion-text {
-      color: #555;
+      color: #6B6B8A;
       font-size: 13px;
-      padding: 12px;
-      background-color: rgba(101, 85, 143, 0.05);
-      border-radius: 4px;
-      border-left: 3px solid #65558F;
+      padding: 10px 14px;
+      background: #FAFAFE;
+      border-radius: 8px;
+      border-left: 3px solid #D5CEEF;
       margin-bottom: 0;
     }
 
     .modulo-acciones {
       display: flex;
-      gap: 10px;
-      margin-left: 20px;
+      gap: 8px;
+      margin-left: 18px;
       flex-wrap: wrap;
       justify-content: flex-end;
+      align-items: flex-start;
     }
 
-    /* MODAL */
+    /* ── MODAL ── */
     .modal-overlay {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
       bottom: 0;
-      background-color: rgba(0, 0, 0, 0.5);
+      background: rgba(26, 26, 46, 0.55);
+      backdrop-filter: blur(4px);
       display: flex;
       justify-content: center;
       align-items: center;
       z-index: 1000;
-      animation: fadeIn 0.2s ease;
-    }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-      }
-      to {
-        opacity: 1;
-      }
+      animation: fadeInPage 0.2s ease;
     }
 
     .modal-content {
       background: white;
-      border-radius: 12px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-      max-width: 700px;
+      border-radius: 18px;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22);
+      max-width: 680px;
       width: 95%;
       max-height: 90vh;
       overflow-y: auto;
-      animation: slideUp 0.3s ease;
+      animation: slideUp 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
     @keyframes slideUp {
-      from {
-        transform: translateY(20px);
-        opacity: 0;
-      }
-      to {
-        transform: translateY(0);
-        opacity: 1;
-      }
+      from { transform: translateY(24px) scale(0.97); opacity: 0; }
+      to   { transform: translateY(0) scale(1); opacity: 1; }
     }
 
     .modal-header {
-      padding: 25px;
-      border-bottom: 1px solid #ecf0f1;
+      padding: 22px 26px;
+      background: linear-gradient(135deg, #F0EDFF, #EBE9F2);
+      border-radius: 18px 18px 0 0;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      border-bottom: 1px solid #E0DAF5;
 
       h3 {
         margin: 0;
-        color: #2c3e50;
-        font-size: 20px;
+        color: #1A1A2E;
+        font-size: 17px;
+        font-weight: 700;
       }
 
       .btn-close {
-        background: none;
+        background: rgba(101, 85, 143, 0.1);
         border: none;
-        font-size: 28px;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        font-size: 18px;
         cursor: pointer;
-        color: #bdc3c7;
+        color: #65558F;
         padding: 0;
-        transition: color 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
 
         &:hover {
-          color: #2c3e50;
+          background: rgba(101, 85, 143, 0.2);
           transform: none;
           box-shadow: none;
         }
@@ -762,38 +774,38 @@ import { environment } from '../../../environments/environment';
     }
 
     .modal-body {
-      padding: 25px;
+      padding: 26px;
 
       form {
         display: flex;
         flex-direction: column;
-        gap: 20px;
+        gap: 18px;
       }
 
       .form-group {
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 7px;
       }
 
       .form-group label {
-        color: #2c3e50;
+        color: #3D3D5C;
         font-weight: 600;
-        font-size: 14px;
+        font-size: 13px;
       }
 
       .form-group input,
       .form-group select,
       .form-group textarea {
         width: 100%;
-        padding: 12px;
-        border: 2px solid #000000;
-        border-radius: 8px;
+        padding: 11px 14px;
+        border: 1.5px solid #DDD8EF;
+        border-radius: 10px;
         font-size: 14px;
-        background: #fafafa;
-        color: #2c3e50;
-        transition: all 0.3s ease;
-        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        font-family: inherit;
+        background: #FAFAFE;
+        color: #1A1A2E;
+        transition: all 0.2s ease;
       }
 
       .form-group input:focus,
@@ -801,14 +813,13 @@ import { environment } from '../../../environments/environment';
       .form-group textarea:focus {
         outline: none;
         border-color: #65558F;
-        border-width: 3px;
         background: white;
-        box-shadow: 0 0 0 3px rgba(101, 85, 143, 0.2), inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 0 0 3px rgba(101, 85, 143, 0.12);
       }
 
       .form-group input:disabled,
       .form-group select:disabled {
-        background: #f5f5f5;
+        background: #F5F3FA;
         cursor: not-allowed;
         opacity: 0.6;
       }
@@ -822,37 +833,35 @@ import { environment } from '../../../environments/environment';
       .form-group input[type="file"] {
         padding: 10px;
         cursor: pointer;
+        background: white;
+        border-color: #DDD8EF;
       }
 
       .form-actions {
         display: flex;
         gap: 12px;
         justify-content: flex-end;
-        margin-top: 20px;
-        padding-top: 20px;
-        border-top: 1px solid #ecf0f1;
+        margin-top: 8px;
+        padding-top: 18px;
+        border-top: 1px solid #F0EDFF;
       }
     }
 
-    /* RESPONSIVE */
+    /* ── RESPONSIVE ── */
     @media (max-width: 768px) {
-      .filter-form {
-        grid-template-columns: 1fr;
-      }
+      .filter-form { grid-template-columns: 1fr; }
 
       .results-header {
         flex-direction: column;
         align-items: flex-start;
-        gap: 15px;
+        gap: 14px;
 
         .header-info {
           flex-direction: column;
-          gap: 10px;
+          align-items: flex-start;
+          gap: 8px;
           width: 100%;
-
-          h3 {
-            font-size: 18px;
-          }
+          h3 { font-size: 16px; }
         }
 
         .btn-add-question {
@@ -866,7 +875,7 @@ import { environment } from '../../../environments/environment';
 
         .modulo-acciones {
           margin-left: 0;
-          margin-top: 15px;
+          margin-top: 14px;
           width: 100%;
           justify-content: flex-start;
 
@@ -937,7 +946,8 @@ export class AdminModulosComponent implements OnInit {
     private moduloService: ModuloService,
     private categoriaService: CategoriaService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private toast: ToastService
   ) {}
 
   ngOnInit() {
@@ -1371,7 +1381,7 @@ export class AdminModulosComponent implements OnInit {
 
   guardarModulo() {
     if (!this.nuevoModulo.nombre) {
-      alert('Por favor completa el nombre del módulo');
+      this.toast.warning('Por favor completa el nombre del módulo');
       return;
     }
 
@@ -1408,7 +1418,7 @@ export class AdminModulosComponent implements OnInit {
     if (this.editandoModulo) {
       this.categoriaService.updateModuloWithFile(this.nuevoModulo.id, formData).subscribe({
         next: () => {
-          alert('Módulo actualizado exitosamente');
+          this.toast.success('Módulo actualizado exitosamente');
           this.cerrarFormulario();
           // Recargar permisos y luego datos
           this.authService.refreshUser().subscribe({
@@ -1421,13 +1431,13 @@ export class AdminModulosComponent implements OnInit {
         },
         error: (error: any) => {
           console.error('Error al actualizar módulo:', error);
-          alert('Error al actualizar el módulo');
+          this.toast.error('Error al actualizar el módulo');
         }
       });
     } else {
       this.categoriaService.createModuloWithFile(formData).subscribe({
         next: () => {
-          alert('Módulo creado exitosamente');
+          this.toast.success('Módulo creado exitosamente');
           this.cerrarFormulario();
           console.log('🔄 Recargando permisos después de crear módulo...');
           // Recargar permisos y luego datos
@@ -1449,7 +1459,7 @@ export class AdminModulosComponent implements OnInit {
         },
         error: (error: any) => {
           console.error('Error al crear módulo:', error);
-          alert('Error al crear el módulo');
+          this.toast.error('Error al crear el módulo');
         }
       });
     }
@@ -1460,13 +1470,13 @@ export class AdminModulosComponent implements OnInit {
     if (file) {
       // Validar tamaño (2MB)
       if (file.size > 2048000) {
-        alert('El archivo es demasiado grande. Tamaño máximo: 2MB');
+        this.toast.warning('El archivo es demasiado grande. Tamaño máximo: 2MB');
         return;
       }
 
       // Validar tipo
       if (!file.type.startsWith('image/')) {
-        alert('Por favor selecciona un archivo de imagen válido');
+        this.toast.warning('Por favor selecciona un archivo de imagen válido');
         return;
       }
 
@@ -1492,10 +1502,11 @@ export class AdminModulosComponent implements OnInit {
   }
 
   eliminarModulo(id: number) {
-    if (confirm('¿Estás seguro de que deseas eliminar este módulo? Esto también eliminará todos sus submódulos.')) {
+    this.toast.confirm('¿Estás seguro de que deseas eliminar este módulo? Esto también eliminará todos sus submódulos.').then(ok => {
+      if (!ok) return;
       this.categoriaService.deleteModulo(id).subscribe({
         next: () => {
-          alert('Módulo eliminado exitosamente');
+          this.toast.success('Módulo eliminado exitosamente');
           this.cargarDatos();
           if (this.consultaRealizada) {
             this.buscarModulos();
@@ -1503,10 +1514,10 @@ export class AdminModulosComponent implements OnInit {
         },
         error: (error: any) => {
           console.error('Error al eliminar módulo:', error);
-          alert('Error al eliminar el módulo');
+          this.toast.error('Error al eliminar el módulo');
         }
       });
-    }
+    });
   }
 
   getNombrePadre(idpadre: number): string {

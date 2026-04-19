@@ -5,6 +5,7 @@ import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-
 import { CategoriaService } from '../../services/categoria.service';
 import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
+import { ToastService } from '../../services/toast.service';
 
 interface Categoria {
   id?: number;
@@ -19,33 +20,46 @@ interface Categoria {
   imports: [CommonModule, FormsModule, DragDropModule],
   template: `
     <div class="admin-categorias">
-      <h2>Gestión de Categorías</h2>
+      <!-- ENCABEZADO -->
+      <div class="page-header">
+        <h2>Gestión de Categorías</h2>
+        <p class="subtitle">Crea, edita y reordena las categorías del sistema</p>
+      </div>
 
       <!-- Formulario de creación/edición -->
       <div class="form-section">
-        <h3>{{ editingCategoria ? 'Editar Categoría' : 'Crear Nueva Categoría' }}</h3>
+        <div class="form-section-header">
+          <span class="form-section-icon">{{ editingCategoria ? '✏️' : '➕' }}</span>
+          <h3>{{ editingCategoria ? 'Editar Categoría' : 'Crear Nueva Categoría' }}</h3>
+        </div>
         <form (ngSubmit)="guardarCategoria()">
-          <div class="form-group">
-            <label>Nombre:</label>
-            <input 
-              type="text" 
-              [(ngModel)]="nuevaCategoria.nombre" 
-              name="nombre"
-              required
-            />
-          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Nombre <span class="required">*</span></label>
+              <input 
+                type="text" 
+                [(ngModel)]="nuevaCategoria.nombre" 
+                name="nombre"
+                placeholder="Nombre de la categoría"
+                required
+              />
+            </div>
 
-          <div class="form-group">
-            <label>Descripción:</label>
-            <textarea 
-              [(ngModel)]="nuevaCategoria.descripcion" 
-              name="descripcion"
-            ></textarea>
+            <div class="form-group">
+              <label>Descripción</label>
+              <input 
+                type="text"
+                [(ngModel)]="nuevaCategoria.descripcion" 
+                name="descripcion"
+                placeholder="Descripción opcional"
+              />
+            </div>
           </div>
 
           <div class="form-actions">
             <button type="submit" class="btn-primary">
-              {{ editingCategoria ? 'Actualizar' : 'Crear' }}
+              <span>{{ editingCategoria ? '💾' : '✚' }}</span>
+              {{ editingCategoria ? 'Actualizar' : 'Crear Categoría' }}
             </button>
             <button type="button" class="btn-secondary" (click)="cancelarEdicion()">
               Cancelar
@@ -56,20 +70,33 @@ interface Categoria {
 
       <!-- Lista de categorías -->
       <div class="list-section">
-        <h3>Categorías Existentes</h3>
-        <div class="search-bar">
-          <input 
-            type="text" 
-            [(ngModel)]="busqueda" 
-            placeholder="Buscar categorías..."
-            class="search-input"
-          />
+        <div class="list-header">
+          <div class="list-header-info">
+            <h3>Categorías</h3>
+            <span class="count-badge">{{ categorias.length }}</span>
+          </div>
+          <div class="search-bar">
+            <span class="search-icon">🔍</span>
+            <input 
+              type="text" 
+              [(ngModel)]="busqueda" 
+              placeholder="Buscar categorías..."
+              class="search-input"
+            />
+          </div>
         </div>
 
         <div *ngIf="ordenCambiado" class="orden-aviso">
-          <span>⚠ Tienes cambios de orden sin guardar.</span>
-          <button class="btn-save-order" (click)="guardarOrden()">Guardar orden</button>
-          <button class="btn-cancel-order" (click)="descartarOrden()">Descartar</button>
+          <span class="aviso-icon">⚠️</span>
+          <span>Tienes cambios de orden sin guardar.</span>
+          <div class="aviso-actions">
+            <button class="btn-save-order" (click)="guardarOrden()">
+              <span>💾</span> Guardar orden
+            </button>
+            <button class="btn-cancel-order" (click)="descartarOrden()">
+              Descartar
+            </button>
+          </div>
         </div>
 
         <div class="categories-table">
@@ -77,10 +104,10 @@ interface Categoria {
             <thead>
               <tr>
                 <th class="col-drag"></th>
-                <th>ID</th>
+                <th class="col-id">ID</th>
                 <th>Nombre</th>
                 <th>Descripción</th>
-                <th>Acciones</th>
+                <th class="col-actions">Acciones</th>
               </tr>
             </thead>
             <tbody
@@ -89,7 +116,7 @@ interface Categoria {
               [cdkDropListDisabled]="!!busqueda"
             >
               <tr
-                *ngFor="let categoria of categoriasFiltradas"
+                *ngFor="let categoria of categoriasFiltradas; let i = index"
                 cdkDrag
                 [cdkDragDisabled]="!!busqueda"
                 class="drag-row"
@@ -97,16 +124,29 @@ interface Categoria {
                 <td class="col-drag">
                   <span cdkDragHandle class="drag-handle" title="Arrastrar para reordenar">⠿</span>
                 </td>
-                <td>{{ categoria.id }}</td>
-                <td>{{ categoria.nombre }}</td>
-                <td>{{ categoria.descripcion || '-' }}</td>
+                <td class="col-id">
+                  <span class="id-badge">{{ categoria.id }}</span>
+                </td>
                 <td>
-                  <button class="btn-edit" (click)="editarCategoria(categoria)">Editar</button>
-                  <button class="btn-delete" (click)="eliminarCategoria(categoria.id!)">Eliminar</button>
+                  <span class="categoria-nombre">{{ categoria.nombre }}</span>
+                </td>
+                <td class="col-desc">{{ categoria.descripcion || '—' }}</td>
+                <td class="col-actions">
+                  <div class="action-buttons">
+                    <button class="btn-edit" (click)="editarCategoria(categoria)">
+                      ✏️ Editar
+                    </button>
+                    <button class="btn-delete" (click)="eliminarCategoria(categoria.id!)">
+                      🗑️ Eliminar
+                    </button>
+                  </div>
                 </td>
               </tr>
               <tr *ngIf="categoriasFiltradas.length === 0">
-                <td colspan="5" class="no-data">No hay categorías</td>
+                <td colspan="5" class="no-data">
+                  <span class="no-data-icon">📁</span>
+                  <p>No hay categorías{{ busqueda ? ' que coincidan con "' + busqueda + '"' : '' }}</p>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -115,53 +155,110 @@ interface Categoria {
     </div>
   `,
   styles: [`
+    /* ── Base ── */
     .admin-categorias {
       max-width: 1200px;
-      margin: 20px auto;
-      padding: 20px;
+      margin: 0 auto;
+      padding: 28px 24px;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      animation: fadeInPage 0.35s ease-out;
+    }
+    @keyframes fadeInPage {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
 
-    h2 {
-      color: #333;
-      margin-bottom: 30px;
+    /* ── ENCABEZADO ── */
+    .page-header {
+      margin-bottom: 32px;
+      padding-left: 16px;
+      border-left: 4px solid #6C5ECF;
+
+      h2 {
+        margin: 0 0 6px 0;
+        color: #1A1A2E;
+        font-size: 28px;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+      }
+
+      .subtitle {
+        margin: 0;
+        color: #8A8FA8;
+        font-size: 13px;
+        font-weight: 500;
+      }
     }
 
-    h3 {
-      color: #555;
-      margin-bottom: 20px;
-    }
-
+    /* ── FORMULARIO ── */
     .form-section {
       background: white;
-      padding: 30px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-      margin-bottom: 40px;
+      padding: 26px 28px;
+      border-radius: 18px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      margin-bottom: 24px;
+    }
+
+    .form-section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 22px;
+      padding-bottom: 16px;
+      border-bottom: 1.5px solid #F0F0F8;
+
+      .form-section-icon { font-size: 20px; }
+
+      h3 {
+        margin: 0;
+        color: #1A1A2E;
+        font-size: 16px;
+        font-weight: 700;
+      }
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-bottom: 0;
+
+      @media (max-width: 640px) { grid-template-columns: 1fr; }
     }
 
     .form-group {
-      margin-bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
     }
 
     label {
       display: block;
-      margin-bottom: 8px;
-      color: #555;
-      font-weight: 500;
+      color: #3D3D5C;
+      font-weight: 600;
+      font-size: 13px;
+
+      .required { color: #EF5350; margin-left: 2px; }
     }
 
     input, textarea {
       width: 100%;
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
+      padding: 11px 14px;
+      border: 1.5px solid #DDD8EF;
+      border-radius: 10px;
       font-size: 14px;
       font-family: inherit;
+      background: #FAFAFE;
+      color: #1A1A2E;
+      transition: all 0.2s ease;
+
+      &::placeholder { color: #B0B5C9; }
 
       &:focus {
         outline: none;
-        border-color: #667eea;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        border-color: #6C5ECF;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(108, 94, 207, 0.12);
       }
     }
 
@@ -176,153 +273,284 @@ interface Categoria {
       margin-top: 20px;
     }
 
-    .btn-primary, .btn-secondary, .btn-edit, .btn-delete {
+    /* ── BOTONES ── */
+    .btn-primary, .btn-secondary, .btn-edit, .btn-delete,
+    .btn-save-order, .btn-cancel-order {
       padding: 10px 20px;
       border: none;
-      border-radius: 4px;
+      border-radius: 10px;
       cursor: pointer;
-      font-size: 14px;
-      transition: all 0.3s ease;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+
+      &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+      }
+
+      &:active { transform: translateY(0); }
     }
 
     .btn-primary {
-      background-color: #667eea;
+      background: linear-gradient(135deg, #6C5ECF, #9B8AF0);
       color: white;
+      box-shadow: 0 3px 10px rgba(108, 94, 207, 0.3);
 
-      &:hover {
-        background-color: #5568d3;
-      }
+      &:hover { box-shadow: 0 5px 16px rgba(108, 94, 207, 0.38); }
     }
 
     .btn-secondary {
-      background-color: #e0e0e0;
-      color: #333;
+      background: #F0F0F5;
+      color: #5A5A72;
 
-      &:hover {
-        background-color: #d0d0d0;
-      }
+      &:hover { background: #E4E4EE; }
     }
 
     .btn-edit {
-      background-color: #4CAF50;
+      background: linear-gradient(135deg, #2196F3, #1565C0);
       color: white;
+      padding: 7px 14px;
+      font-size: 12px;
+      box-shadow: 0 2px 6px rgba(33,150,243,0.2);
 
-      &:hover {
-        background-color: #45a049;
-      }
+      &:hover { box-shadow: 0 4px 12px rgba(33,150,243,0.32); }
     }
 
     .btn-delete {
-      background-color: #f44336;
+      background: linear-gradient(135deg, #EF5350, #C62828);
       color: white;
+      padding: 7px 14px;
+      font-size: 12px;
+      box-shadow: 0 2px 6px rgba(239,83,80,0.2);
 
-      &:hover {
-        background-color: #da190b;
-      }
+      &:hover { box-shadow: 0 4px 12px rgba(239,83,80,0.32); }
     }
 
+    /* ── SECCIÓN LISTA ── */
     .list-section {
       background: white;
-      padding: 30px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      padding: 26px 28px;
+      border-radius: 18px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    }
+
+    .list-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1.5px solid #F0F0F8;
+      flex-wrap: wrap;
+      gap: 14px;
+
+      .list-header-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+
+        h3 {
+          margin: 0;
+          color: #1A1A2E;
+          font-size: 17px;
+          font-weight: 700;
+        }
+
+        .count-badge {
+          background: #F0EDFF;
+          color: #6C5ECF;
+          padding: 4px 12px;
+          border-radius: 20px;
+          font-size: 12px;
+          font-weight: 700;
+        }
+      }
     }
 
     .search-bar {
-      margin-bottom: 20px;
-    }
+      position: relative;
+      display: flex;
+      align-items: center;
 
-    .search-input {
-      width: 100%;
-      max-width: 300px;
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
+      .search-icon {
+        position: absolute;
+        left: 12px;
+        font-size: 14px;
+        pointer-events: none;
+      }
 
-      &:focus {
-        outline: none;
-        border-color: #667eea;
+      .search-input {
+        padding: 9px 14px 9px 34px;
+        width: 240px;
+        border: 1.5px solid #DDD8EF;
+        border-radius: 10px;
+        font-size: 13px;
+        background: #FAFAFE;
+        color: #1A1A2E;
+        font-family: inherit;
+        transition: all 0.2s ease;
+
+        &::placeholder { color: #B0B5C9; }
+
+        &:focus {
+          outline: none;
+          border-color: #6C5ECF;
+          background: white;
+          box-shadow: 0 0 0 3px rgba(108, 94, 207, 0.1);
+          width: 280px;
+        }
       }
     }
 
+    /* ── AVISO ORDEN ── */
+    .orden-aviso {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #FFF8E1;
+      border: 1px solid #FFD54F;
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #795548;
+
+      .aviso-icon { font-size: 16px; flex-shrink: 0; }
+
+      span { flex: 1; }
+
+      .aviso-actions { display: flex; gap: 8px; margin-left: auto; }
+    }
+
+    .btn-save-order {
+      background: linear-gradient(135deg, #6C5ECF, #9B8AF0);
+      color: white;
+      padding: 7px 14px;
+      font-size: 12px;
+      box-shadow: 0 2px 6px rgba(108,94,207,0.2);
+    }
+
+    .btn-cancel-order {
+      background: #F0F0F5;
+      color: #5A5A72;
+      padding: 7px 14px;
+      font-size: 12px;
+    }
+
+    /* ── TABLA ── */
     .categories-table {
       overflow-x: auto;
+      border-radius: 12px;
+      border: 1px solid #EBEBF5;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 20px;
 
       thead {
-        background-color: #f5f5f5;
+        background: #F7F6FB;
 
         th {
-          padding: 12px;
+          padding: 12px 16px;
           text-align: left;
-          font-weight: 600;
-          color: #333;
-          border-bottom: 2px solid #ddd;
+          font-size: 11px;
+          font-weight: 700;
+          color: #8A8FA8;
+          text-transform: uppercase;
+          letter-spacing: 0.6px;
+          border-bottom: 1.5px solid #EBEBF5;
         }
       }
 
       tbody {
         tr {
-          border-bottom: 1px solid #eee;
+          border-bottom: 1px solid #F0F0F8;
+          transition: background-color 0.15s ease;
 
-          &:hover {
-            background-color: #f9f9f9;
-          }
+          &:last-child { border-bottom: none; }
+
+          &:hover { background: #FAFAFE; }
 
           td {
-            padding: 12px;
-            color: #666;
+            padding: 13px 16px;
+            color: #3D3D5C;
+            font-size: 14px;
+            vertical-align: middle;
           }
         }
       }
     }
 
-    .no-data {
-      text-align: center;
-      color: #999;
-      font-style: italic;
+    .col-drag { width: 44px; text-align: center; }
+    .col-id   { width: 70px; }
+    .col-desc { color: #8A8FA8 !important; font-size: 13px !important; }
+    .col-actions { width: 160px; text-align: right; }
+
+    .id-badge {
+      background: #F0EDFF;
+      color: #6C5ECF;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: 'Monaco', monospace;
     }
 
-    .col-drag {
-      width: 40px;
-      text-align: center;
+    .categoria-nombre {
+      font-weight: 600;
+      color: #1A1A2E;
     }
 
+    .action-buttons {
+      display: flex;
+      gap: 7px;
+      justify-content: flex-end;
+    }
+
+    /* ── DRAG & DROP ── */
     .drag-handle {
       cursor: grab;
-      font-size: 20px;
-      color: #aaa;
+      font-size: 18px;
+      color: #C8C8D8;
       user-select: none;
-      display: inline-block;
-      padding: 4px 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      transition: all 0.15s ease;
 
       &:hover {
-        color: #667eea;
+        color: #6C5ECF;
+        background: #F0EDFF;
       }
 
-      &:active {
-        cursor: grabbing;
-      }
+      &:active { cursor: grabbing; }
     }
 
     .drag-row {
       transition: background-color 0.15s ease;
 
       &.cdk-drag-preview {
-        box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-        background: #fff;
-        border-radius: 4px;
-        opacity: 0.95;
+        box-shadow: 0 8px 28px rgba(108, 94, 207, 0.2);
+        background: white;
+        border-radius: 10px;
+        opacity: 0.98;
+        display: table;
+        table-layout: fixed;
+        width: 100%;
       }
 
-      &.cdk-drag-placeholder {
-        opacity: 0;
-      }
+      &.cdk-drag-placeholder { opacity: 0; }
 
       &.cdk-drag-animating {
         transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
@@ -333,45 +561,37 @@ interface Categoria {
       transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
     }
 
-    .orden-aviso {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      background: #fff8e1;
-      border: 1px solid #ffe082;
-      border-radius: 6px;
-      padding: 10px 16px;
-      margin-bottom: 16px;
-      font-size: 14px;
-      color: #795548;
-    }
+    /* ── EMPTY STATE ── */
+    .no-data {
+      text-align: center;
+      padding: 48px 20px !important;
 
-    .btn-save-order {
-      background-color: #667eea;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      padding: 6px 14px;
-      cursor: pointer;
-      font-size: 13px;
+      .no-data-icon {
+        font-size: 40px;
+        display: block;
+        margin-bottom: 12px;
+        opacity: 0.6;
+      }
 
-      &:hover {
-        background-color: #5568d3;
+      p {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 600;
+        color: #8A8FA8;
       }
     }
 
-    .btn-cancel-order {
-      background-color: #e0e0e0;
-      color: #333;
-      border: none;
-      border-radius: 4px;
-      padding: 6px 14px;
-      cursor: pointer;
-      font-size: 13px;
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      .list-header {
+        flex-direction: column;
+        align-items: flex-start;
 
-      &:hover {
-        background-color: #d0d0d0;
+        .search-bar { width: 100%; .search-input { width: 100%; } }
       }
+
+      .col-desc { display: none; }
+      .col-id   { display: none; }
     }
   `]
 })
@@ -389,7 +609,8 @@ export class AdminCategoriasComponent implements OnInit {
   constructor(
     private categoriaService: CategoriaService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private toast: ToastService
   ) {}
 
   ngOnInit() {
@@ -414,32 +635,32 @@ export class AdminCategoriasComponent implements OnInit {
 
   guardarCategoria() {
     if (!this.nuevaCategoria.nombre) {
-      alert('Por favor completa el nombre de la categoría');
+      this.toast.warning('Por favor completa el nombre de la categoría');
       return;
     }
 
     if (this.editingCategoria) {
       this.categoriaService.updateCategoria(this.editingCategoria.id!, this.nuevaCategoria).subscribe({
         next: () => {
-          alert('Categoría actualizada exitosamente');
+          this.toast.success('Categoría actualizada exitosamente');
           this.cargarCategorias();
           this.resetForm();
         },
         error: (error: any) => {
           console.error('Error al actualizar categoría:', error);
-          alert('Error al actualizar la categoría');
+          this.toast.error('Error al actualizar la categoría');
         }
       });
     } else {
       this.categoriaService.createCategoria(this.nuevaCategoria).subscribe({
         next: () => {
-          alert('Categoría creada exitosamente');
+          this.toast.success('Categoría creada exitosamente');
           this.cargarCategorias();
           this.resetForm();
         },
         error: (error: any) => {
           console.error('Error al crear categoría:', error);
-          alert('Error al crear la categoría');
+          this.toast.error('Error al crear la categoría');
         }
       });
     }
@@ -455,18 +676,19 @@ export class AdminCategoriasComponent implements OnInit {
   }
 
   eliminarCategoria(id: number) {
-    if (confirm('¿Estás seguro de que deseas eliminar esta categoría?')) {
+    this.toast.confirm('¿Estás seguro de que deseas eliminar esta categoría?').then(ok => {
+      if (!ok) return;
       this.categoriaService.deleteCategoria(id).subscribe({
         next: () => {
-          alert('Categoría eliminada exitosamente');
+          this.toast.success('Categoría eliminada exitosamente');
           this.cargarCategorias();
         },
         error: (error: any) => {
           console.error('Error al eliminar categoría:', error);
-          alert('Error al eliminar la categoría');
+          this.toast.error('Error al eliminar la categoría');
         }
       });
-    }
+    });
   }
 
   resetForm() {
@@ -491,11 +713,11 @@ export class AdminCategoriasComponent implements OnInit {
     this.categoriaService.reordenarCategorias(items).subscribe({
       next: () => {
         this.ordenCambiado = false;
-        alert('Orden guardado correctamente');
+        this.toast.success('Orden guardado correctamente');
       },
       error: (error: any) => {
         console.error('Error al guardar el orden:', error);
-        alert('Error al guardar el orden');
+        this.toast.error('Error al guardar el orden');
       }
     });
   }

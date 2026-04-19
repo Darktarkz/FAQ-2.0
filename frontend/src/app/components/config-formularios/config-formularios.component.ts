@@ -6,6 +6,7 @@ import { CategoriaService, Modulo } from '../../services/categoria.service';
 import { FormularioCampoService, FormularioCampo } from '../../services/formulario-campo.service';
 import { FormularioConfigService } from '../../services/formulario-config.service';
 import { FormularioTemplateService, FormularioTemplate } from '../../services/formulario-template.service';
+import { AuthService } from '../../services/auth.service';
 import { forkJoin, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 
@@ -80,16 +81,27 @@ export class ConfigFormulariosComponent implements OnInit {
     { key: 'actividad', nombre_campo: 'actividad', etiqueta: 'Actividad', tipo: 'text', placeholder: 'Descripción de la actividad', tamano_columna: 6, icono: '⚡' },
   ];
 
+  isAdmin = false;
+  allowedModuleIds: number[] = [];
+
   constructor(
     private categoriaService: CategoriaService,
     private formularioCampoService: FormularioCampoService,
     private formularioConfigService: FormularioConfigService,
-    private formularioTemplateService: FormularioTemplateService
+    private formularioTemplateService: FormularioTemplateService,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
+    this.isAdmin = this.authService.isAdmin();
+    this.allowedModuleIds = this.authService.getAllowedModuleIds();
     this.cargarModulos();
     this.cargarTemplates();
+  }
+
+  /** Normaliza una cadena eliminando acentos para comparación insensible a diacríticos */
+  private normalizarTexto(texto: string): string {
+    return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   }
 
   cargarTemplates(): void {
@@ -196,27 +208,31 @@ export class ConfigFormulariosComponent implements OnInit {
       return;
     }
 
-    // Esperar a que ambos recursos estén cargados
-    if (!this.modulosCompletos.length || !this.templates.length) {
+    if (!this.modulosCompletos.length) {
       return;
     }
 
-    const termino = this.terminoBusqueda.toLowerCase().trim();
+    const termino = this.normalizarTexto(this.terminoBusqueda.trim());
     const resultado: ModuloConfig[] = [];
 
+    // Filtro de permisos: no-admin solo ve sus módulos permitidos
+    const allowed = this.isAdmin ? null : new Set(this.allowedModuleIds.map(id => Number(id)));
+
     for (const modulo of this.modulosCompletos) {
-      if (!modulo.nombre.toLowerCase().includes(termino)) continue;
+      // Filtrar por permisos
+      if (allowed && !allowed.has(Number(modulo.id))) continue;
+
+      // Búsqueda insensible a acentos y mayúsculas
+      if (!this.normalizarTexto(modulo.nombre).includes(termino)) continue;
 
       const herencia = this.encontrarTemplateConHerencia(Number(modulo.id));
-      if (!herencia) continue; // No tiene formulario en ningún ancestro
-
-      const isDirect = herencia.origenModuloId === Number(modulo.id);
-      const template = this.templates.find(t => t.id === herencia.templateId);
+      const isDirect = herencia ? herencia.origenModuloId === Number(modulo.id) : false;
+      const template = herencia ? this.templates.find(t => t.id === herencia.templateId) : undefined;
 
       resultado.push({
         modulo_id: Number(modulo.id),
         modulo_nombre: modulo.nombre,
-        origenModuloId: herencia.origenModuloId,
+        origenModuloId: herencia?.origenModuloId,
         camposPersonalizados: isDirect ? ((template?.campos as any[]) || []) : []
       });
     }

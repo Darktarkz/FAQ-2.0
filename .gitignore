@@ -25,3 +25,6 @@ desktop.ini
 # Environment files
 .env
 .env.local
+
+#Skills
+.claude

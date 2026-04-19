@@ -1,10 +1,11 @@
-﻿import { Component, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { UserService, CreateUserDto, UpdateUserDto } from '../../services/user.service';
 import { User, AuthService } from '../../services/auth.service';
 import { ModuloService, Modulo } from '../../services/modulo.service';
+import { ToastService } from '../../services/toast.service';
 
 interface ModuloJerarquico extends Modulo {
   nivel?: number;
@@ -15,141 +16,124 @@ interface ModuloJerarquico extends Modulo {
   standalone: true,
   imports: [FormsModule, CommonModule],
   template: `
-    <div class="admin-usuarios">
-      <div class="page-header">
-        <div>
-          <h2>👥 Gestión de Usuarios</h2>
-          <p class="subtitle">Administra usuarios y sus permisos de edición</p>
+    <div class="au-page">
+      <div class="au-header">
+        <div class="au-header-left">
+          <h2 class="au-title">Gestión de Usuarios</h2>
+          <p class="au-subtitle">Administra usuarios y sus permisos de edición</p>
         </div>
-        <button class="btn-refresh" (click)="cargarTodo()">↻ Refrescar</button>
-      </div>
-
-      <div class="notification" *ngIf="notificacion" [class.success]="notificacion.tipo === 'success'" [class.error]="notificacion.tipo === 'error'">
-        <span>{{ notificacion.tipo === 'success' ? '✓' : '⚠' }}</span>
-        <span>{{ notificacion.mensaje }}</span>
-        <button class="close-notif" (click)="cerrarNotificacion()">×</button>
-      </div>
-
-      <div class="layout">
-        <section class="card form-card">
-          <div class="card-header">
-            <h3>➕ Crear Nuevo Usuario</h3>
+        <div class="au-header-right">
+          <div class="stat-pill">
+            <span class="stat-pill-num">{{ usuarios.length }}</span>
+            <span class="stat-pill-lbl">usuarios</span>
           </div>
-          <form (ngSubmit)="guardar()" class="form">
-            <div class="form-group">
-              <label for="name">
-                <span>Nombre completo</span>
-                <span class="required">*</span>
-              </label>
-              <input id="name" [(ngModel)]="form.name" name="name" placeholder="Ej: Juan Pérez" required/>
+          <div class="stat-pill admin">
+            <span class="stat-pill-num">{{ countAdmins() }}</span>
+            <span class="stat-pill-lbl">admins</span>
+          </div>
+          <button class="btn-refresh" (click)="cargarTodo()">↻ Refrescar</button>
+        </div>
+      </div>
+
+      <div class="au-layout">
+        <section class="au-card form-card">
+          <div class="au-card-header">
+            <h3 class="au-card-title">Crear Usuario</h3>
+          </div>
+          <form (ngSubmit)="guardar()" class="au-form">
+            <div class="fg">
+              <label class="fg-label">Nombre completo <span class="req">*</span></label>
+              <input class="fg-input" [(ngModel)]="form.name" name="name" placeholder="Ej: Juan Pérez" required/>
+            </div>
+            <div class="fg">
+              <label class="fg-label">Correo electrónico <span class="req">*</span></label>
+              <input class="fg-input" [(ngModel)]="form.email" name="email" type="email" placeholder="usuario@ejemplo.com" required/>
+            </div>
+            <div class="fg">
+              <label class="fg-label">Contraseña <span class="req">*</span></label>
+              <input class="fg-input" [(ngModel)]="form.password" name="password" type="password" placeholder="Mínimo 6 caracteres" required/>
             </div>
 
-            <div class="form-group">
-              <label for="email">
-                <span>Correo electrónico</span>
-                <span class="required">*</span>
-              </label>
-              <input id="email" [(ngModel)]="form.email" name="email" type="email" placeholder="usuario@ejemplo.com" required/>
-            </div>
-
-            <div class="form-group">
-              <label for="password">
-                <span>Contraseña</span>
-                <span class="required">*</span>
-              </label>
-              <input id="password" [(ngModel)]="form.password" name="password" type="password" placeholder="Mínimo 6 caracteres" required/>
-            </div>
-
-            <div class="checkbox-group">
-              <label class="checkbox-label">
+            <div class="toggle-row">
+              <div class="toggle-info">
+                <span class="toggle-title">Administrador del sistema</span>
+                <span class="toggle-desc">Acceso completo a todas las funciones</span>
+              </div>
+              <label class="toggle-switch">
                 <input type="checkbox" [(ngModel)]="form.is_admin" name="is_admin"/>
-                <span class="checkmark"></span>
-                <div class="checkbox-info">
-                  <span class="checkbox-title">Administrador del sistema</span>
-                  <span class="checkbox-desc">Acceso completo a todas las funciones</span>
-                </div>
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
               </label>
             </div>
 
-            <div class="modulos-section">
-              <div class="modulos-header">
-                <span class="section-title">📚 Módulos Permitidos</span>
-                <small class="section-desc">El usuario podrá gestionar preguntas en estos módulos</small>
+            <div class="mod-section">
+              <p class="mod-section-title">Módulos permitidos</p>
+              <div class="search-wrap">
+                <input class="search-input" type="text" [(ngModel)]="busquedaModulos" name="busquedaModulos"
+                  placeholder="Buscar módulo..." (ngModelChange)="filtrarModulos()"/>
               </div>
-              
-              <div class="search-box">
-                <input type="text" [(ngModel)]="busquedaModulos" name="busquedaModulos" placeholder="🔍 Buscar módulo..." (ngModelChange)="filtrarModulos()"/>
-              </div>
-
-              <div class="modulos-list" *ngIf="modulosJerarquicos.length; else noModulos">
-                <label *ngFor="let modulo of modulosFiltrados" class="modulo-checkbox" [style.padding-left.px]="16 + (modulo.nivel || 0) * 20">
-                  <input type="checkbox" [checked]="modulo.id !== undefined && isModuloSelected(modulo.id)" (change)="onModuloChange(modulo.id, $event)"/>
-                  <span class="checkmark"></span>
-                  <span class="modulo-nombre">
-                    <span class="nivel-indicator" *ngIf="modulo.nivel && modulo.nivel > 0">└─</span>
-                    {{ modulo.nombre }}
+              <div class="mod-list" *ngIf="modulosJerarquicos.length; else noMods">
+                <label *ngFor="let m of modulosFiltrados" class="mod-check"
+                  [style.padding-left.px]="12 + (m.nivel || 0) * 18">
+                  <input type="checkbox" [checked]="m.id !== undefined && isModuloSelected(m.id)"
+                    (change)="onModuloChange(m.id, $event)"/>
+                  <span class="chk"></span>
+                  <span class="mod-lbl">
+                    <span class="nivel-ind" *ngIf="m.nivel && m.nivel > 0">└─</span>
+                    {{ m.nombre }}
                   </span>
-                  <span class="modulo-badge" *ngIf="modulo.nivel === 0">Raíz</span>
+                  <span class="root-badge" *ngIf="m.nivel === 0">Raíz</span>
                 </label>
               </div>
-              <ng-template #noModulos>
-                <p class="empty-state">😕 No hay módulos disponibles</p>
+              <ng-template #noMods>
+                <p class="empty-small">Sin módulos disponibles</p>
               </ng-template>
             </div>
 
-            <div class="form-actions">
-              <button type="submit" class="btn-primary">✓ Crear Usuario</button>
-              <button type="button" class="btn-secondary" (click)="resetForm()">↺ Limpiar</button>
+            <div class="au-form-actions">
+              <button type="submit" class="btn-primary">Crear Usuario</button>
+              <button type="button" class="btn-ghost" (click)="resetForm()">Limpiar</button>
             </div>
           </form>
         </section>
 
-        <section class="card usuarios-card">
-          <div class="card-header between">
-            <div>
-              <h3>📋 Usuarios Registrados</h3>
-              <span class="count-badge">{{ usuariosFiltrados.length }} usuario{{ usuariosFiltrados.length !== 1 ? 's' : '' }}</span>
+        <section class="au-card list-card">
+          <div class="au-card-header between">
+            <div class="header-with-count">
+              <h3 class="au-card-title">Usuarios Registrados</h3>
+              <span class="count-chip">{{ usuariosFiltrados.length }}</span>
+            </div>
+          </div>
+          <div class="search-wrap" style="margin-top:4px">
+            <input class="search-input" type="text" [(ngModel)]="busquedaUsuarios"
+              placeholder="Buscar por nombre o correo..." (ngModelChange)="filtrarUsuarios()"/>
+          </div>
+
+          <div class="u-list" *ngIf="usuariosFiltrados.length; else sinUsers">
+            <div *ngFor="let u of usuariosFiltrados" class="u-card" [class.es-yo]="u.id === usuarioActual?.id">
+              <div class="u-top">
+                <div class="u-avatar">{{ obtenerIniciales(u.name) }}</div>
+                <div class="u-info">
+                  <p class="u-name">{{ u.name }}</p>
+                  <p class="u-email">{{ u.email }}</p>
+                </div>
+                <span class="rol-chip" [class.admin]="u.is_admin">{{ u.is_admin ? '👑 Admin' : '✏️ Editor' }}</span>
+                <span class="yo-badge" *ngIf="u.id === usuarioActual?.id">Tú</span>
+              </div>
+              <div class="u-mods" *ngIf="u.modulos && u.modulos.length > 0">
+                <span class="mod-tag" *ngFor="let mod of u.modulos">{{ mod.nombre }}</span>
+              </div>
+              <div class="u-mods empty-mods" *ngIf="!u.modulos || u.modulos.length === 0">
+                Sin módulos asignados
+              </div>
+              <div class="u-actions">
+                <button class="btn-edit-sm" (click)="abrirModalEdicion(u)">✏️ Editar</button>
+                <button class="btn-del-sm" (click)="eliminar(u)" [disabled]="u.id === usuarioActual?.id">🗑️ Eliminar</button>
+              </div>
             </div>
           </div>
 
-          <div class="search-box">
-            <input type="text" [(ngModel)]="busquedaUsuarios" placeholder="🔍 Buscar por nombre o correo..." (ngModelChange)="filtrarUsuarios()"/>
-          </div>
-
-          <div class="usuarios-list" *ngIf="usuariosFiltrados.length; else sinUsuarios">
-            <div *ngFor="let u of usuariosFiltrados" class="usuario-card" [class.es-actual]="u.id === usuarioActual?.id">
-              <div class="usuario-header">
-                <div class="usuario-avatar">{{ obtenerIniciales(u.name) }}</div>
-                <div class="usuario-info">
-                  <h4 class="usuario-nombre">{{ u.name }}</h4>
-                  <p class="usuario-email">{{ u.email }}</p>
-                </div>
-                <div class="usuario-rol">
-                  <span class="rol-badge" [class.admin]="u.is_admin">{{ u.is_admin ? '👑 Admin' : '✏️ Editor' }}</span>
-                </div>
-              </div>
-
-              <div class="usuario-modulos" *ngIf="u.modulos && u.modulos.length > 0">
-                <span class="modulos-title">Módulos asignados:</span>
-                <div class="modulos-tags">
-                  <span class="modulo-tag" *ngFor="let m of u.modulos">{{ m.nombre }}</span>
-                </div>
-              </div>
-              <div class="usuario-modulos" *ngIf="!u.modulos || u.modulos.length === 0">
-                <span class="sin-modulos">Sin módulos asignados</span>
-              </div>
-
-              <div class="usuario-actions">
-                <button class="btn-edit" (click)="abrirModalEdicion(u)">✏️ Editar</button>
-                <button class="btn-delete" (click)="eliminar(u)" [disabled]="u.id === usuarioActual?.id">🗑️ Eliminar</button>
-              </div>
-
-              <div class="usuario-actual-badge" *ngIf="u.id === usuarioActual?.id">Tú</div>
-            </div>
-          </div>
-          
-          <ng-template #sinUsuarios>
-            <div class="empty-state-large">
+          <ng-template #sinUsers>
+            <div class="empty-large">
               <div class="empty-icon">👤</div>
               <p>No se encontraron usuarios</p>
             </div>
@@ -159,178 +143,156 @@ interface ModuloJerarquico extends Modulo {
     </div>
 
     <div class="modal-overlay" *ngIf="mostrarModalEdicion" (click)="cerrarModalEdicion()">
-      <div class="modal-content" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-          <h3>✏️ Editar Usuario</h3>
-          <button class="btn-close-modal" (click)="cerrarModalEdicion()">×</button>
+      <div class="modal-box" (click)="$event.stopPropagation()">
+        <div class="modal-head">
+          <h3 class="modal-title">Editar Usuario</h3>
+          <button class="modal-close" (click)="cerrarModalEdicion()">×</button>
         </div>
-
-        <form (ngSubmit)="actualizarUsuario()" class="modal-form">
-          <div class="form-group">
-            <label for="edit-name">
-              <span>Nombre completo</span>
-              <span class="required">*</span>
-            </label>
-            <input id="edit-name" [(ngModel)]="formEdicion.name" name="edit-name" required/>
+        <form (ngSubmit)="actualizarUsuario()" class="au-form modal-body">
+          <div class="fg">
+            <label class="fg-label">Nombre completo <span class="req">*</span></label>
+            <input class="fg-input" [(ngModel)]="formEdicion.name" name="edit-name" required/>
           </div>
-
-          <div class="form-group">
-            <label for="edit-email">
-              <span>Correo electrónico</span>
-              <span class="required">*</span>
-            </label>
-            <input id="edit-email" [(ngModel)]="formEdicion.email" name="edit-email" type="email" required/>
+          <div class="fg">
+            <label class="fg-label">Correo electrónico <span class="req">*</span></label>
+            <input class="fg-input" [(ngModel)]="formEdicion.email" name="edit-email" type="email" required/>
           </div>
-
-          <div class="form-group">
-            <label for="edit-password">
-              <span>Nueva contraseña</span>
-            </label>
-            <input id="edit-password" [(ngModel)]="formEdicion.password" name="edit-password" type="password" placeholder="Dejar en blanco para mantener actual"/>
-            <small class="help-text">Solo completa si deseas cambiar la contraseña</small>
+          <div class="fg">
+            <label class="fg-label">Nueva contraseña <small class="optional">(dejar en blanco para no cambiar)</small></label>
+            <input class="fg-input" [(ngModel)]="formEdicion.password" name="edit-password" type="password" placeholder="Mínimo 6 caracteres"/>
           </div>
-
-          <div class="checkbox-group">
-            <label class="checkbox-label">
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <span class="toggle-title">Administrador del sistema</span>
+            </div>
+            <label class="toggle-switch">
               <input type="checkbox" [(ngModel)]="formEdicion.is_admin" name="edit-is-admin"/>
-              <span class="checkmark"></span>
-              <div class="checkbox-info">
-                <span class="checkbox-title">Administrador del sistema</span>
-              </div>
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
             </label>
           </div>
-
-          <div class="modulos-section">
-            <div class="modulos-header">
-              <span class="section-title">📚 Módulos Permitidos</span>
+          <div class="mod-section">
+            <p class="mod-section-title">Módulos permitidos</p>
+            <div class="search-wrap">
+              <input class="search-input" type="text" [(ngModel)]="busquedaModulosEdicion" name="busquedaModulosEdicion"
+                placeholder="Buscar módulo..." (input)="filtrarModulosEdicion()"/>
             </div>
-            
-            <div class="search-box">
-              <input type="text" [(ngModel)]="busquedaModulosEdicion" name="busquedaModulosEdicion" placeholder="🔍 Buscar módulo..." (input)="filtrarModulosEdicion()"/>
-            </div>
-
-            <div class="modulos-list" *ngIf="modulosJerarquicos.length">
-              <label *ngFor="let modulo of modulosEdicionFiltrados" class="modulo-checkbox" [style.padding-left.px]="16 + (modulo.nivel || 0) * 20">
-                <input type="checkbox" [checked]="modulo.id !== undefined && isModuloEdicionSelected(modulo.id)" (change)="onModuloEdicionChange(modulo.id, $event)"/>
-                <span class="checkmark"></span>
-                <span class="modulo-nombre">
-                  <span class="nivel-indicator" *ngIf="modulo.nivel && modulo.nivel > 0">└─</span>
-                  {{ modulo.nombre }}
+            <div class="mod-list" *ngIf="modulosJerarquicos.length">
+              <label *ngFor="let m of modulosEdicionFiltrados" class="mod-check"
+                [style.padding-left.px]="12 + (m.nivel || 0) * 18">
+                <input type="checkbox" [checked]="m.id !== undefined && isModuloEdicionSelected(m.id)"
+                  (change)="onModuloEdicionChange(m.id, $event)"/>
+                <span class="chk"></span>
+                <span class="mod-lbl">
+                  <span class="nivel-ind" *ngIf="m.nivel && m.nivel > 0">└─</span>
+                  {{ m.nombre }}
                 </span>
-                <span class="modulo-badge" *ngIf="modulo.nivel === 0">Raíz</span>
+                <span class="root-badge" *ngIf="m.nivel === 0">Raíz</span>
               </label>
             </div>
           </div>
-
-          <div class="modal-actions">
-            <button type="submit" class="btn-primary">✓ Actualizar</button>
-            <button type="button" class="btn-secondary" (click)="cerrarModalEdicion()">Cancelar</button>
+          <div class="modal-foot">
+            <button type="submit" class="btn-primary">Actualizar</button>
+            <button type="button" class="btn-ghost" (click)="cerrarModalEdicion()">Cancelar</button>
           </div>
         </form>
       </div>
     </div>
   `,
   styles: [`
-    .admin-usuarios { max-width: 1400px; margin: 0 auto; padding: 24px; background: linear-gradient(135deg, #f5f3f7 0%, #f9f8fa 100%); min-height: 100vh; }
-    .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; background: white; padding: 20px 24px; border-radius: 12px; box-shadow: 0 2px 8px rgba(101, 85, 143, 0.1); }
-    .page-header h2 { margin: 0; color: #65558F; font-size: 28px; font-weight: 700; }
-    .subtitle { color: #666; margin: 4px 0 0 0; font-size: 14px; }
-    .btn-refresh { background: linear-gradient(135deg, #65558F 0%, #7e6ba3 100%); color: white; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; }
-    .btn-refresh:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(101, 85, 143, 0.3); }
-    .notification { padding: 16px 20px; border-radius: 10px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; font-weight: 500; animation: slideIn 0.3s ease; }
-    .notification.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-    .notification.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-    .close-notif { margin-left: auto; background: none; border: none; font-size: 24px; cursor: pointer; opacity: 0.6; }
-    .close-notif:hover { opacity: 1; }
-    .layout { display: grid; grid-template-columns: 450px 1fr; gap: 24px; align-items: start; }
-    .card { background: white; border-radius: 12px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08); padding: 24px; transition: box-shadow 0.3s ease; }
-    .card:hover { box-shadow: 0 6px 20px rgba(101, 85, 143, 0.15); }
-    .form-card { position: sticky; top: 24px; }
-    .card-header { margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid #f0f0f0; }
-    .card-header h3 { margin: 0; color: #333; font-size: 20px; font-weight: 700; }
-    .between { display: flex; align-items: center; justify-content: space-between; }
-    .count-badge { display: inline-block; background: linear-gradient(135deg, #65558F 0%, #7e6ba3 100%); color: white; padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; margin-left: 12px; }
-    .form { display: flex; flex-direction: column; gap: 16px; }
-    .form-group { display: flex; flex-direction: column; gap: 8px; }
-    .form-group label { font-weight: 600; color: #333; font-size: 14px; display: flex; align-items: center; gap: 4px; }
-    .required { color: #e74c3c; font-weight: 700; }
-    input[type="text"], input[type="email"], input[type="password"] { padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; transition: all 0.3s ease; font-family: inherit; }
-    input:focus { outline: none; border-color: #65558F; box-shadow: 0 0 0 3px rgba(101, 85, 143, 0.1); }
-    .checkbox-group { margin: 8px 0; }
-    .checkbox-label { display: flex; align-items: flex-start; gap: 12px; cursor: pointer; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; transition: all 0.3s ease; }
-    .checkbox-label:hover { border-color: #65558F; background: #f9f8fa; }
-    .checkbox-label input[type="checkbox"] { display: none; }
-    .checkmark { width: 22px; height: 22px; border: 2px solid #ddd; border-radius: 6px; flex-shrink: 0; position: relative; transition: all 0.3s ease; }
-    .checkbox-label input[type="checkbox"]:checked + .checkmark { background: #65558F; border-color: #65558F; }
-    .checkbox-label input[type="checkbox"]:checked + .checkmark::after { content: '✓'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 14px; font-weight: bold; }
-    .checkbox-info { display: flex; flex-direction: column; gap: 2px; }
-    .checkbox-title { font-weight: 600; color: #333; }
-    .checkbox-desc { font-size: 12px; color: #666; }
-    .modulos-section { border: 2px solid #e8e4f0; border-radius: 10px; padding: 16px; background: #fafafa; }
-    .modulos-header { margin-bottom: 12px; }
-    .section-title { font-weight: 700; color: #333; font-size: 15px; }
-    .section-desc { display: block; color: #666; font-size: 12px; margin-top: 4px; }
-    .modulos-list { max-height: 280px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 8px; background: white; padding: 8px; }
-    .modulo-checkbox { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 6px; cursor: pointer; transition: all 0.2s ease; border-bottom: 1px solid #f5f5f5; }
-    .modulo-checkbox:last-child { border-bottom: none; }
-    .modulo-checkbox:hover { background: #f9f8fa; }
-    .modulo-checkbox input[type="checkbox"] { position: absolute; opacity: 0; width: 22px; height: 22px; margin: 0; }
-    .modulo-checkbox input[type="checkbox"]:checked + .checkmark { background: #65558F; border-color: #65558F; }
-    .modulo-checkbox input[type="checkbox"]:checked + .checkmark::after { content: '✓'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 14px; font-weight: bold; }
-    .modulo-nombre { flex: 1; font-size: 14px; color: #333; display: flex; align-items: center; gap: 6px; }
-    .nivel-indicator { color: #999; font-size: 12px; }
-    .modulo-badge { background: #65558F; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
-    .search-box { margin-bottom: 12px; }
-    .search-box input { width: 100%; padding: 10px 16px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; transition: all 0.3s ease; }
-    .search-box input:focus { outline: none; border-color: #65558F; box-shadow: 0 0 0 3px rgba(101, 85, 143, 0.1); }
-    .form-actions { display: flex; gap: 12px; margin-top: 8px; }
-    .btn-primary { flex: 1; background: linear-gradient(135deg, #65558F 0%, #7e6ba3 100%); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 15px; transition: all 0.3s ease; }
-    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(101, 85, 143, 0.3); }
-    .btn-secondary { background: white; color: #65558F; border: 2px solid #65558F; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; }
-    .btn-secondary:hover { background: #f9f8fa; }
-    .usuarios-list { display: flex; flex-direction: column; gap: 16px; margin-top: 16px; }
-    .usuario-card { background: white; border: 2px solid #e8e4f0; border-radius: 12px; padding: 20px; transition: all 0.3s ease; position: relative; }
-    .usuario-card:hover { border-color: #65558F; box-shadow: 0 4px 16px rgba(101, 85, 143, 0.15); transform: translateY(-2px); }
-    .usuario-card.es-actual { border-color: #65558F; background: linear-gradient(135deg, #faf9fb 0%, #f5f3f7 100%); }
-    .usuario-header { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
-    .usuario-avatar { width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #65558F 0%, #7e6ba3 100%); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px; flex-shrink: 0; }
-    .usuario-info { flex: 1; min-width: 0; }
-    .usuario-nombre { margin: 0; font-size: 18px; font-weight: 700; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .usuario-email { margin: 4px 0 0 0; font-size: 14px; color: #666; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .usuario-rol { flex-shrink: 0; }
-    .rol-badge { display: inline-block; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; background: #e8e4f0; color: #65558F; }
-    .rol-badge.admin { background: linear-gradient(135deg, #65558F 0%, #7e6ba3 100%); color: white; }
-    .usuario-modulos { margin-bottom: 16px; padding: 12px; background: #fafafa; border-radius: 8px; }
-    .modulos-title { font-size: 13px; color: #666; font-weight: 600; display: block; margin-bottom: 8px; }
-    .modulos-tags { display: flex; flex-wrap: wrap; gap: 6px; }
-    .modulo-tag { background: white; border: 1px solid #e0e0e0; padding: 4px 10px; border-radius: 16px; font-size: 12px; color: #555; font-weight: 500; }
-    .sin-modulos { font-size: 13px; color: #999; font-style: italic; }
-    .usuario-actions { display: flex; gap: 10px; }
-    .btn-edit, .btn-delete { flex: 1; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.3s ease; border: none; }
-    .btn-edit { background: #e8f5e9; color: #2e7d32; }
-    .btn-edit:hover { background: #c8e6c9; transform: translateY(-2px); }
-    .btn-delete { background: #ffebee; color: #c62828; }
-    .btn-delete:hover:not(:disabled) { background: #ffcdd2; transform: translateY(-2px); }
-    .btn-delete:disabled { opacity: 0.5; cursor: not-allowed; }
-    .usuario-actual-badge { position: absolute; top: 12px; right: 12px; background: #65558F; color: white; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; }
-    .empty-state { text-align: center; padding: 20px; color: #999; font-style: italic; }
-    .empty-state-large { text-align: center; padding: 60px 20px; }
-    .empty-icon { font-size: 64px; margin-bottom: 16px; opacity: 0.3; }
-    .empty-state-large p { font-size: 16px; color: #666; margin: 0 0 8px 0; }
-    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; animation: fadeIn 0.3s ease; }
-    .modal-content { background: white; border-radius: 16px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3); animation: slideUp 0.3s ease; }
-    .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 24px; border-bottom: 2px solid #f0f0f0; }
-    .modal-header h3 { margin: 0; font-size: 22px; color: #333; font-weight: 700; }
-    .btn-close-modal { background: none; border: none; font-size: 32px; color: #999; cursor: pointer; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: all 0.3s ease; }
-    .btn-close-modal:hover { background: #f0f0f0; color: #333; }
-    .modal-form { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
-    .modal-actions { display: flex; gap: 12px; margin-top: 8px; }
-    .help-text { font-size: 12px; color: #666; margin-top: 4px; }
-    @keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-    @media (max-width: 1200px) { .layout { grid-template-columns: 1fr; } .form-card { position: static; } }
-    @media (max-width: 768px) { .admin-usuarios { padding: 16px; } .page-header { flex-direction: column; gap: 16px; align-items: stretch; } .usuario-header { flex-wrap: wrap; } .usuario-actions { flex-direction: column; } }
+    * { box-sizing:border-box; font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
+    .au-page { max-width:1400px; margin:0 auto; padding:28px 24px; animation:fadeInPage .35s ease-out both; }
+    @keyframes fadeInPage { from { opacity:0; transform:translateY(10px) } to { opacity:1; transform:translateY(0) } }
+    .au-header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; margin-bottom:28px; }
+    .au-title { margin:0; font-size:26px; font-weight:700; color:#1A1A2E; }
+    .au-subtitle { margin:4px 0 0; font-size:14px; color:#9197A3; }
+    .au-header-right { display:flex; align-items:center; gap:10px; }
+    .stat-pill { display:flex; align-items:center; gap:6px; background:#fff; border:1.5px solid #E8E4F8; border-radius:20px; padding:6px 14px; }
+    .stat-pill.admin { border-color:#C4B5FD; background:#F0EDFF; }
+    .stat-pill-num { font-weight:700; font-size:16px; color:#1A1A2E; }
+    .stat-pill-lbl { font-size:12px; color:#9197A3; }
+    .btn-refresh { background:#F0EDFF; color:#6C5ECF; border:none; padding:8px 18px; border-radius:10px; cursor:pointer; font-weight:600; font-size:14px; transition:all .2s; }
+    .btn-refresh:hover { background:#E0D8FF; }
+    .au-layout { display:grid; grid-template-columns:420px 1fr; gap:24px; align-items:start; }
+    .au-card { background:#fff; border-radius:18px; box-shadow:0 4px 20px rgba(0,0,0,.05); padding:24px; }
+    .form-card { position:sticky; top:24px; }
+    .au-card-header { margin-bottom:20px; padding-bottom:16px; border-bottom:1.5px solid #F3F0FF; }
+    .au-card-title { margin:0; font-size:18px; font-weight:700; color:#1A1A2E; }
+    .between { display:flex; align-items:center; justify-content:space-between; }
+    .header-with-count { display:flex; align-items:center; gap:10px; }
+    .count-chip { background:#F0EDFF; color:#6C5ECF; font-weight:700; font-size:13px; padding:3px 10px; border-radius:20px; }
+    .au-form { display:flex; flex-direction:column; gap:16px; }
+    .fg { display:flex; flex-direction:column; gap:6px; }
+    .fg-label { font-weight:600; font-size:13px; color:#1A1A2E; }
+    .req { color:#E53E3E; }
+    .fg-input { padding:10px 14px; border:1.5px solid #E2E8F0; border-radius:10px; font-size:14px; transition:border-color .2s,box-shadow .2s; outline:none; color:#1A1A2E; }
+    .fg-input:focus { border-color:#6C5ECF; box-shadow:0 0 0 3px rgba(108,94,207,.12); }
+    .toggle-row { display:flex; align-items:center; justify-content:space-between; background:#F8F7FF; border-radius:12px; padding:12px 16px; gap:12px; }
+    .toggle-info { display:flex; flex-direction:column; gap:2px; }
+    .toggle-title { font-weight:600; font-size:14px; color:#1A1A2E; }
+    .toggle-desc { font-size:12px; color:#9197A3; }
+    .toggle-switch { position:relative; display:inline-block; width:44px; height:24px; flex-shrink:0; cursor:pointer; }
+    .toggle-switch input { opacity:0; width:0; height:0; position:absolute; }
+    .toggle-track { display:block; width:44px; height:24px; background:#D1D5DB; border-radius:12px; transition:background .2s; position:relative; }
+    .toggle-switch input:checked ~ .toggle-track { background:#6C5ECF; }
+    .toggle-thumb { position:absolute; top:2px; left:2px; width:20px; height:20px; background:#fff; border-radius:50%; transition:transform .2s; box-shadow:0 1px 4px rgba(0,0,0,.2); }
+    .toggle-switch input:checked ~ .toggle-track .toggle-thumb { transform:translateX(20px); }
+    .mod-section { background:#F8F7FF; border-radius:12px; padding:14px; }
+    .mod-section-title { margin:0 0 10px; font-weight:700; font-size:13px; color:#1A1A2E; }
+    .search-wrap { margin-bottom:10px; }
+    .search-input { width:100%; padding:9px 14px; border:1.5px solid #E2E8F0; border-radius:10px; font-size:13px; outline:none; transition:border-color .2s; color:#1A1A2E; }
+    .search-input:focus { border-color:#6C5ECF; }
+    .mod-list { max-height:260px; overflow-y:auto; display:flex; flex-direction:column; gap:2px; }
+    .mod-check { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:8px; cursor:pointer; transition:background .15s; }
+    .mod-check:hover { background:rgba(108,94,207,.07); }
+    .mod-check input[type="checkbox"] { position:absolute; opacity:0; width:0; height:0; }
+    .chk { width:18px; height:18px; border:1.5px solid #C4C8D1; border-radius:5px; flex-shrink:0; position:relative; transition:all .15s; background:#fff; }
+    .mod-check input[type="checkbox"]:checked ~ .chk { background:#6C5ECF; border-color:#6C5ECF; }
+    .mod-check input[type="checkbox"]:checked ~ .chk::after { content:''; position:absolute; top:3px; left:5px; width:5px; height:8px; border:2px solid #fff; border-top:none; border-left:none; transform:rotate(45deg); }
+    .mod-lbl { flex:1; font-size:13px; color:#1A1A2E; display:flex; align-items:center; gap:4px; }
+    .nivel-ind { color:#9197A3; font-size:11px; }
+    .root-badge { background:#E0D8FF; color:#6C5ECF; padding:1px 7px; border-radius:10px; font-size:11px; font-weight:600; }
+    .empty-small { margin:0; color:#9197A3; font-size:13px; text-align:center; padding:12px; }
+    .optional { font-weight:400; color:#9197A3; }
+    .au-form-actions { display:flex; gap:10px; }
+    .btn-primary { flex:1; background:#6C5ECF; color:#fff; border:none; padding:11px 20px; border-radius:10px; cursor:pointer; font-weight:600; font-size:14px; transition:background .2s,transform .15s; }
+    .btn-primary:hover { background:#5B4DB8; transform:translateY(-1px); }
+    .btn-ghost { background:#F0EDFF; color:#6C5ECF; border:none; padding:11px 20px; border-radius:10px; cursor:pointer; font-weight:600; font-size:14px; transition:background .2s; }
+    .btn-ghost:hover { background:#E0D8FF; }
+    .u-list { display:flex; flex-direction:column; gap:12px; margin-top:16px; }
+    .u-card { background:#fff; border:1.5px solid #EEE; border-radius:14px; padding:18px; position:relative; transition:border-color .2s,box-shadow .2s; }
+    .u-card:hover { border-color:#6C5ECF; box-shadow:0 4px 16px rgba(108,94,207,.1); }
+    .u-card.es-yo { border-color:#C4B5FD; background:#FDFCFF; }
+    .u-top { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+    .u-avatar { width:44px; height:44px; border-radius:50%; background:#6C5ECF; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:16px; flex-shrink:0; }
+    .u-info { flex:1; min-width:0; }
+    .u-name { margin:0; font-size:15px; font-weight:700; color:#1A1A2E; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .u-email { margin:2px 0 0; font-size:13px; color:#9197A3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .rol-chip { padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; background:#F0EDFF; color:#6C5ECF; white-space:nowrap; }
+    .rol-chip.admin { background:#6C5ECF; color:#fff; }
+    .yo-badge { position:absolute; top:14px; right:14px; background:#6C5ECF; color:#fff; padding:3px 9px; border-radius:12px; font-size:11px; font-weight:700; }
+    .u-mods { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; padding:10px; background:#F8F7FF; border-radius:10px; }
+    .u-mods.empty-mods { color:#9197A3; font-size:12px; font-style:italic; }
+    .mod-tag { background:#fff; border:1px solid #E2E8F0; padding:3px 9px; border-radius:14px; font-size:12px; color:#555; font-weight:500; }
+    .u-actions { display:flex; gap:8px; }
+    .btn-edit-sm { flex:1; padding:9px; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px; border:none; background:#E8F5E9; color:#2E7D32; transition:background .15s; }
+    .btn-edit-sm:hover { background:#C8E6C9; }
+    .btn-del-sm { flex:1; padding:9px; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px; border:none; background:#FFF0F0; color:#C62828; transition:background .15s; }
+    .btn-del-sm:hover:not(:disabled) { background:#FFCDD2; }
+    .btn-del-sm:disabled { opacity:.4; cursor:not-allowed; }
+    .empty-large { text-align:center; padding:60px 20px; }
+    .empty-icon { font-size:60px; opacity:.25; margin-bottom:12px; }
+    .empty-large p { font-size:15px; color:#9197A3; margin:0; }
+    .modal-overlay { position:fixed; inset:0; background:rgba(26,26,46,.55); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; z-index:1000; }
+    .modal-box { background:#fff; border-radius:20px; width:90%; max-width:580px; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.2); animation:slideUp .4s cubic-bezier(.34,1.56,.64,1) both; }
+    @keyframes slideUp { from { transform:translateY(40px) scale(.96); opacity:0; } to { transform:translateY(0) scale(1); opacity:1; } }
+    .modal-head { display:flex; align-items:center; justify-content:space-between; padding:22px 24px; border-bottom:1.5px solid #F3F0FF; }
+    .modal-title { margin:0; font-size:20px; font-weight:700; color:#1A1A2E; }
+    .modal-close { background:none; border:none; font-size:28px; color:#9197A3; cursor:pointer; width:36px; height:36px; display:flex; align-items:center; justify-content:center; border-radius:50%; transition:background .15s; line-height:1; }
+    .modal-close:hover { background:#F3F0FF; color:#1A1A2E; }
+    .modal-body { padding:24px; }
+    .modal-foot { display:flex; gap:10px; margin-top:8px; }
+    @media(max-width:1200px) { .au-layout { grid-template-columns:1fr; } .form-card { position:static; } }
+    @media(max-width:640px) { .au-page { padding:16px; } .au-header { flex-direction:column; align-items:flex-start; } .u-top { flex-wrap:wrap; } .u-actions { flex-direction:column; } }
   `]
 })
 export class AdminUsuariosComponent implements OnInit {
@@ -348,9 +310,14 @@ export class AdminUsuariosComponent implements OnInit {
   busquedaUsuarios = '';
   busquedaModulos = '';
   busquedaModulosEdicion = '';
-  notificacion: { mensaje: string; tipo: 'success' | 'error' } | null = null;
 
-  constructor(private userService: UserService, private moduloService: ModuloService, private authService: AuthService, private router: Router) {}
+  constructor(
+    private userService: UserService,
+    private moduloService: ModuloService,
+    private authService: AuthService,
+    private router: Router,
+    private toast: ToastService
+  ) {}
 
   ngOnInit(): void {
     if (!this.authService.isAdmin()) {
@@ -374,7 +341,7 @@ export class AdminUsuariosComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error al cargar usuarios', err);
-        this.mostrarNotificacion('Error al cargar usuarios', 'error');
+        this.toast.error('Error al cargar usuarios');
       }
     });
   }
@@ -388,7 +355,7 @@ export class AdminUsuariosComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error al cargar módulos', err);
-        this.mostrarNotificacion('Error al cargar módulos', 'error');
+        this.toast.error('Error al cargar módulos');
       }
     });
   }
@@ -501,22 +468,22 @@ export class AdminUsuariosComponent implements OnInit {
 
   guardar() {
     if (!this.form.name.trim() || !this.form.email.trim()) {
-      this.mostrarNotificacion('Nombre y correo son obligatorios', 'error');
+      this.toast.error('Nombre y correo son obligatorios');
       return;
     }
     if (!this.form.password || this.form.password.length < 6) {
-      this.mostrarNotificacion('La contraseña debe tener al menos 6 caracteres', 'error');
+      this.toast.error('La contraseña debe tener al menos 6 caracteres');
       return;
     }
     this.userService.create(this.form).subscribe({
       next: () => {
-        this.mostrarNotificacion('Usuario creado exitosamente', 'success');
+        this.toast.success('Usuario creado exitosamente');
         this.cargarUsuarios();
         this.resetForm();
       },
       error: (err) => {
         const mensaje = err.error?.message || 'Error al crear usuario';
-        this.mostrarNotificacion(mensaje, 'error');
+        this.toast.error(mensaje);
       }
     });
   }
@@ -545,11 +512,11 @@ export class AdminUsuariosComponent implements OnInit {
 
   actualizarUsuario() {
     if (!this.formEdicion.name?.trim() || !this.formEdicion.email?.trim()) {
-      this.mostrarNotificacion('Nombre y correo son obligatorios', 'error');
+      this.toast.error('Nombre y correo son obligatorios');
       return;
     }
     if (this.formEdicion.password && this.formEdicion.password.length < 6) {
-      this.mostrarNotificacion('La contraseña debe tener al menos 6 caracteres', 'error');
+      this.toast.error('La contraseña debe tener al menos 6 caracteres');
       return;
     }
     const payload: UpdateUserDto = {
@@ -563,34 +530,34 @@ export class AdminUsuariosComponent implements OnInit {
     }
     this.userService.update(this.editandoModelos!, payload).subscribe({
       next: () => {
-        this.mostrarNotificacion('Usuario actualizado exitosamente', 'success');
+        this.toast.success('Usuario actualizado exitosamente');
         this.cargarUsuarios();
         this.cerrarModalEdicion();
       },
       error: (err) => {
         const mensaje = err.error?.message || 'Error al actualizar usuario';
-        this.mostrarNotificacion(mensaje, 'error');
+        this.toast.error(mensaje);
       }
     });
   }
 
   eliminar(u: User) {
     if (u.id === this.usuarioActual?.id) {
-      this.mostrarNotificacion('No puedes eliminarte a ti mismo', 'error');
+      this.toast.error('No puedes eliminarte a ti mismo');
       return;
     }
-    if (!confirm(`¿Estás seguro de eliminar a ${u.name}?\n\nEsta acción no se puede deshacer.`)) {
-      return;
-    }
-    this.userService.remove(u.id).subscribe({
-      next: () => {
-        this.mostrarNotificacion('Usuario eliminado exitosamente', 'success');
-        this.cargarUsuarios();
-      },
-      error: (err) => {
-        const mensaje = err.error?.message || 'No se pudo eliminar el usuario';
-        this.mostrarNotificacion(mensaje, 'error');
-      }
+    this.toast.confirm(`¿Eliminar a ${u.name}? Esta acción no se puede deshacer.`).then(ok => {
+      if (!ok) return;
+      this.userService.remove(u.id).subscribe({
+        next: () => {
+          this.toast.success('Usuario eliminado exitosamente');
+          this.cargarUsuarios();
+        },
+        error: (err) => {
+          const mensaje = err.error?.message || 'No se pudo eliminar el usuario';
+          this.toast.error(mensaje);
+        }
+      });
     });
   }
 
@@ -604,14 +571,7 @@ export class AdminUsuariosComponent implements OnInit {
     return nombre.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
   }
 
-  mostrarNotificacion(mensaje: string, tipo: 'success' | 'error') {
-    this.notificacion = { mensaje, tipo };
-    setTimeout(() => {
-      this.notificacion = null;
-    }, 5000);
-  }
-
-  cerrarNotificacion() {
-    this.notificacion = null;
+  countAdmins(): number {
+    return this.usuarios.filter(u => u.is_admin).length;
   }
 }
