@@ -47,7 +47,7 @@ import { NotificacionService, Notificacion } from '../../services/notificacion.s
             <span class="nav-icon">🎯</span>
             <span class="nav-label">Forms. por Pregunta</span>
           </a>
-          <a routerLink="/solicitud-accesos" routerLinkActive="active" class="nav-item">
+          <a routerLink="/admin/solicitud-accesos" routerLinkActive="active" class="nav-item">
             <span class="nav-icon">🔑</span>
             <span class="nav-label">Solicitud Accesos</span>
           </a>

@@ -308,7 +308,7 @@ import { ToastService } from '../../services/toast.service';
 
     /* ── SECCIÓN DE FILTROS ── */
     .filter-section {
-      background: linear-gradient(135deg, #39275c 0%, #4a3470 100%);
+      background: white;
       padding: 28px 30px;
       border-radius: 18px;
       margin-bottom: 28px;
@@ -316,7 +316,7 @@ import { ToastService } from '../../services/toast.service';
     }
 
     .section-title {
-      color: white;
+      color: black;
       font-size: 15px;
       font-weight: 700;
       margin: 0 0 20px 0;
@@ -347,12 +347,12 @@ import { ToastService } from '../../services/toast.service';
 
     select, input, textarea {
       padding: 11px 14px;
-      border: 1.5px solid rgba(255,255,255,0.15);
+      border: 1.5px solid #DDD8EF;
       border-radius: 10px;
       font-size: 14px;
       font-family: inherit;
       transition: all 0.2s ease;
-      background-color: rgba(255,255,255,0.97);
+      background-color: #FAFAFE;
       color: #1A1A2E;
 
       &:hover {
@@ -361,9 +361,9 @@ import { ToastService } from '../../services/toast.service';
 
       &:focus {
         outline: none;
-        border-color: white;
-        box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.25);
-        background-color: white;
+        border-color: #6C5ECF;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(108, 94, 207, 0.12);
       }
 
       &:disabled {
@@ -445,17 +445,17 @@ import { ToastService } from '../../services/toast.service';
 
     /* ── BOTONES ── */
     .btn-consultar, .btn-limpiar, .btn-add-question, .btn-edit, .btn-delete, .btn-save, .btn-cancel, .btn-close {
-      padding: 10px 22px;
+      padding: 10px 20px;
       border: none;
       border-radius: 10px;
       cursor: pointer;
       font-size: 13px;
       font-weight: 600;
       font-family: inherit;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.2s ease;
       display: inline-flex;
       align-items: center;
-      gap: 7px;
+      gap: 6px;
       white-space: nowrap;
 
       span { font-size: 15px; }
@@ -469,16 +469,16 @@ import { ToastService } from '../../services/toast.service';
     }
 
     .btn-consultar {
-      background: white;
-      color: #65558F;
+      background: linear-gradient(135deg, #6C5ECF, #9B8AF0);
+      color: white;
       font-weight: 700;
       box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 
-      &:hover { background: #F5F3F9; }
+      &:hover { box-shadow: 0 5px 16px rgba(108, 94, 207, 0.38); }
     }
 
     .btn-limpiar {
-      background: rgba(255, 255, 255, 0.12);
+      background: linear-gradient(135deg, #6C5ECF, #9B8AF0);
       color: white;
       border: 1.5px solid rgba(255,255,255,0.5);
 

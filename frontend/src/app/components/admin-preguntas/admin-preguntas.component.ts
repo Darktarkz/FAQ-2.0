@@ -322,15 +322,15 @@ import { ToastService } from '../../services/toast.service';
 
     /* ── SECCIÓN DE FILTROS ── */
     .filter-section {
-      background: linear-gradient(135deg, #39275c 0%, #4a3470 100%);
-      padding: 28px 30px;
+      background: white;
+      padding: 26px 28px;
       border-radius: 18px;
-      margin-bottom: 28px;
-      box-shadow: 0 8px 32px rgba(57, 39, 92, 0.28);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      margin-bottom: 24px;
     }
 
     .section-title {
-      color: white;
+      color: black;
       font-size: 15px;
       font-weight: 700;
       margin: 0 0 20px 0;
@@ -360,22 +360,23 @@ import { ToastService } from '../../services/toast.service';
     }
 
     select, input, textarea {
+      width: 100%;
       padding: 11px 14px;
-      border: 1.5px solid rgba(255,255,255,0.15);
+      border: 1.5px solid #DDD8EF;
       border-radius: 10px;
       font-size: 14px;
       font-family: inherit;
-      transition: all 0.2s ease;
-      background-color: rgba(255,255,255,0.97);
+      background: #FAFAFE;
       color: #1A1A2E;
+      transition: all 0.2s ease;
 
       &:hover { border-color: rgba(255,255,255,0.4); }
 
       &:focus {
         outline: none;
-        border-color: white;
-        box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.25);
-        background-color: white;
+        border-color: #6C5ECF;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(108, 94, 207, 0.12);
       }
     }
 
@@ -398,44 +399,43 @@ import { ToastService } from '../../services/toast.service';
     /* ── BOTONES ── */
     .btn-consultar, .btn-limpiar, .btn-add-question, .btn-edit, .btn-delete,
     .btn-save, .btn-cancel, .btn-close, .btn-reorder, .btn-clean-numbers {
-      padding: 10px 22px;
+      padding: 10px 20px;
       border: none;
       border-radius: 10px;
       cursor: pointer;
       font-size: 13px;
       font-weight: 600;
       font-family: inherit;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.2s ease;
       display: inline-flex;
       align-items: center;
-      gap: 7px;
+      gap: 6px;
       white-space: nowrap;
 
       span { font-size: 15px; }
 
       &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
       }
 
       &:active { transform: translateY(0); }
     }
 
     .btn-consultar {
-      background: white;
-      color: #667eea;
-      font-weight: 700;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+       background: linear-gradient(135deg, #6C5ECF, #9B8AF0);
+      color: white;
+      box-shadow: 0 3px 10px rgba(108, 94, 207, 0.3);
 
-      &:hover { background: #F4F5FE; }
+      &:hover { box-shadow: 0 5px 16px rgba(108, 94, 207, 0.38); }
     }
 
     .btn-limpiar {
-      background: rgba(255, 255, 255, 0.12);
+       background: linear-gradient(135deg, #6C5ECF, #9B8AF0);
       color: white;
-      border: 1.5px solid rgba(255,255,255,0.5);
+      box-shadow: 0 3px 10px rgba(108, 94, 207, 0.3);
 
-      &:hover { background: rgba(255, 255, 255, 0.22); }
+      &:hover { box-shadow: 0 5px 16px rgba(108, 94, 207, 0.38); }
     }
 
     .btn-add-question {

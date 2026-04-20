@@ -8,7 +8,6 @@ import {
   AbstractControl,
 } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
-import { DependenciaService } from '../../services/dependencia.service';
 import { SolicitudAccesoService } from '../../services/solicitud-acceso.service';
 import { Dependencia } from '../../models/solicitud-acceso.model';
 
@@ -25,6 +24,42 @@ const ROLES_CONTRATACION = [
 ];
 
 const ROLES_CAJA_MENOR = ['Solicitante', 'Ordenador de gasto'];
+
+const DEPENDENCIAS: Dependencia[] = [
+  { id: 1,  nombre: 'Dirección General' },
+  { id: 2,  nombre: 'Subdirección de las Artes' },
+  { id: 3,  nombre: 'Subdirección de Formación Artística' },
+  { id: 4,  nombre: 'Subdirección de Equipamientos Culturales' },
+  { id: 5,  nombre: 'Subdirección Administrativa y Financiera' },
+  { id: 6,  nombre: 'Oficina Asesora Planeación y tecnologías de la información' },
+  { id: 7,  nombre: 'Subdirección Jurídica' },
+  { id: 8,  nombre: 'Asesoría de Comunicaciones' },
+  { id: 9,  nombre: 'Asesoría de Control Interno' },
+  { id: 10, nombre: 'Gerencia de Danza' },
+  { id: 11, nombre: 'Gerencia de Artes Audiovisuales' },
+  { id: 12, nombre: 'Gerencia de Escenarios' },
+  { id: 13, nombre: 'Gerencia de Arte Dramático' },
+  { id: 14, nombre: 'Gerencia de Artes Plásticas y Visuales' },
+  { id: 15, nombre: 'Gerencia de Música' },
+  { id: 16, nombre: 'Gerencia de Literatura' },
+  { id: 17, nombre: 'Talento Humano' },
+  { id: 18, nombre: 'Gerencia Nidos' },
+  { id: 19, nombre: 'Gerencia Crea' },
+  { id: 20, nombre: 'Línea Estratégica Arte Ciencia y Tecnología' },
+  { id: 21, nombre: 'Línea Estratégica Emprendimiento' },
+  { id: 22, nombre: 'Convocatorias' },
+  { id: 23, nombre: 'Teatro Mayor Julio Mario Santo Domingo' },
+  { id: 24, nombre: 'Planetario de Bogotá' },
+  { id: 25, nombre: 'Área de Producción' },
+  { id: 26, nombre: 'Servicios Generales' },
+  { id: 27, nombre: 'Gestión Documental' },
+  { id: 28, nombre: 'Culturas en Común' },
+  { id: 29, nombre: 'Linea Arte y Memoria sin Fronteras' },
+  { id: 30, nombre: 'GALERÍA Santa Fe' },
+  { id: 31, nombre: 'Gerencia de Contratación' },
+  { id: 32, nombre: 'Subdirección de Infraestructura' },
+  { id: 33, nombre: 'Gerencia de Escenarios Territoriales' },
+];
 
 const MODULOS_SICAPITAL = [
   'Módulo Almacén',
@@ -151,8 +186,7 @@ export const PANDORA_MODULOS_ROLES: Record<string, string[]> = {
 export class FormularioAccesosComponent implements OnInit, OnDestroy {
   form!: FormGroup;
 
-  dependencias: Dependencia[] = [];
-  cargandoDependencias = true;
+  readonly dependencias: Dependencia[] = DEPENDENCIAS;
 
   enviando = false;
   enviado = false;
@@ -177,13 +211,11 @@ export class FormularioAccesosComponent implements OnInit, OnDestroy {
 
   constructor(
     private fb: FormBuilder,
-    private dependenciaService: DependenciaService,
     private solicitudService: SolicitudAccesoService
   ) {}
 
   ngOnInit(): void {
     this.buildForm();
-    this.loadDependencias();
     this.setupReactiveListeners();
   }
 
@@ -230,20 +262,6 @@ export class FormularioAccesosComponent implements OnInit, OnDestroy {
       // Campos PANDORA
       pandora_modulo: [''],
       pandora_rol: [''],
-    });
-  }
-
-  // ─── Carga de datos ───────────────────────────────────────────────────────
-
-  private loadDependencias(): void {
-    this.dependenciaService.getAll().pipe(takeUntil(this.destroy$)).subscribe({
-      next: (res) => {
-        this.dependencias = res.dependencias;
-        this.cargandoDependencias = false;
-      },
-      error: () => {
-        this.cargandoDependencias = false;
-      },
     });
   }
 

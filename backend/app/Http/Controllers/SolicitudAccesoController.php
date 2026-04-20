@@ -2,14 +2,32 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\SolicitudAccesoMail;
 use App\Models\SolicitudAcceso;
 use App\Http\Requests\StoreSolicitudAccesoRequest;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 
 class SolicitudAccesoController extends Controller
 {
+    /** Correo destino GLPI — configurable en .env con MAIL_SOPORTE_TO */
+    private function glpiEmail(): string
+    {
+        return env('MAIL_SOPORTE_TO', 'soporte.ti@idartes.gov.co');
+    }
+
+    /** Nombres legibles para cada clave de plataforma */
+    private const NOMBRES_PLATAFORMA = [
+        'sif'           => 'SIF',
+        'orfeo'         => 'ORFEO',
+        'contratacion'  => 'SISTEMA DE CONTRATACIÓN',
+        'caja_menor'    => 'CAJA MENOR',
+        'sicapital'     => 'SICAPITAL',
+        'pandora'       => 'PANDORA',
+    ];
     /**
      * Crear una nueva solicitud de acceso (público, sin autenticación)
      */
@@ -53,6 +71,37 @@ class SolicitudAccesoController extends Controller
         ]);
 
         $solicitud->load('dependencia');
+
+        // ─── Enviar un correo independiente por cada plataforma seleccionada ────
+
+        $datosUsuario = [
+            'nombre_completo'  => $solicitud->nombre_completo,
+            'tipo_documento'   => $solicitud->tipo_documento,
+            'numero_documento' => $solicitud->numero_documento,
+            'usuario_red'      => $solicitud->usuario_red,
+            'correo'           => $solicitud->correo,
+            'dependencia'      => $solicitud->dependencia?->nombre ?? 'Sin dependencia',
+            'cargo_tipo'       => $solicitud->cargo_tipo,
+            'cargo_nombre'     => $solicitud->cargo_nombre,
+        ];
+
+        $destino = $this->glpiEmail();
+
+        foreach ($plataformas as $key => $data) {
+            $nombrePlataforma = self::NOMBRES_PLATAFORMA[$key] ?? strtoupper($key);
+            $firmaPath = $data['firma_path'] ?? null;
+
+            try {
+                Mail::to($destino)->send(
+                    new SolicitudAccesoMail($datosUsuario, $nombrePlataforma, $data, $firmaPath)
+                );
+            } catch (\Throwable $e) {
+                Log::error("Error enviando correo de solicitud de acceso [{$nombrePlataforma}]: " . $e->getMessage(), [
+                    'solicitud_id' => $solicitud->id,
+                    'plataforma'   => $key,
+                ]);
+            }
+        }
 
         return response()->json([
             'success'   => true,

@@ -28,10 +28,6 @@ export const routes: Routes = [
     component: PaginaSoporteComponent
   },
   {
-    path: 'solicitud-accesos',
-    component: FormularioAccesosComponent
-  },
-  {
     path: 'admin',
     component: AdminLayoutComponent,
     canActivate: [AdminGuard],
@@ -55,6 +51,10 @@ export const routes: Routes = [
       {
         path: 'usuarios',
         component: AdminUsuariosComponent
+      },
+      {
+        path: 'solicitud-accesos',
+        component: FormularioAccesosComponent
       },
       {
         path: 'formularios',

@@ -101,13 +101,8 @@
           <select
             id="dependencia_id"
             formControlName="dependencia_id"
-            [disabled]="cargandoDependencias"
           >
-            <option value="">
-              {{
-                cargandoDependencias ? 'Cargando dependencias...' : '— Seleccione su dependencia —'
-              }}
-            </option>
+            <option value="">— Seleccione su dependencia —</option>
             <option *ngFor="let dep of dependencias" [value]="dep.id">{{ dep.nombre }}</option>
           </select>
           <span class="error-msg" *ngIf="campoInvalido('dependencia_id')">
