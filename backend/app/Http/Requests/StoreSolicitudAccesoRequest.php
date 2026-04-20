@@ -8,6 +8,9 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 
 class StoreSolicitudAccesoRequest extends FormRequest
 {
+    /** IDs válidos de dependencias (lista estática, sin consulta a BD) */
+    private const DEPENDENCIA_IDS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33];
+
     public function authorize(): bool
     {
         return true; // Público, sin autenticación
@@ -21,7 +24,7 @@ class StoreSolicitudAccesoRequest extends FormRequest
             'numero_documento' => 'required|string|max:50',
             'usuario_red'      => 'required|string|max:100',
             'correo'           => 'required|email|max:255',
-            'dependencia_id'   => 'required|exists:dependencias,id',
+            'dependencia_id'   => ['required', 'integer', 'in:' . implode(',', self::DEPENDENCIA_IDS)],
             'cargo_tipo'       => 'required|in:contratista,funcionario',
             'cargo_nombre'     => 'nullable|string|max:255',
             'plataformas'      => 'required|json',

@@ -25,12 +25,13 @@ class SolicitudAccesoMail extends Mailable
         public readonly string  $plataformaNombre,
         public readonly array   $plataformaData,
         public readonly ?string $firmaPath = null,
+        public readonly int     $solicitudId = 0,
     ) {}
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Solicitud de Acceso - ' . $this->plataformaNombre . ' - ' . $this->datosUsuario['nombre_completo'],
+            subject: 'Solicitud de Acceso - ' . $this->plataformaNombre . ' - SOL-' . str_pad($this->solicitudId, 6, '0', STR_PAD_LEFT),
         );
     }
 

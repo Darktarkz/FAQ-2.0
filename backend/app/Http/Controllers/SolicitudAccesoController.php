@@ -19,6 +19,43 @@ class SolicitudAccesoController extends Controller
         return env('MAIL_SOPORTE_TO', 'soporte.ti@idartes.gov.co');
     }
 
+    /** Nombres legibles para cada ID de dependencia */
+    private const NOMBRES_DEPENDENCIA = [
+        1  => 'Dirección General',
+        2  => 'Subdirección de las Artes',
+        3  => 'Subdirección de Formación Artística',
+        4  => 'Subdirección de Equipamientos Culturales',
+        5  => 'Subdirección Administrativa y Financiera',
+        6  => 'Oficina Asesora Planeación y tecnologías de la información',
+        7  => 'Subdirección Jurídica',
+        8  => 'Asesoría de Comunicaciones',
+        9  => 'Asesoría de Control Interno',
+        10 => 'Gerencia de Danza',
+        11 => 'Gerencia de Artes Audiovisuales',
+        12 => 'Gerencia de Escenarios',
+        13 => 'Gerencia de Arte Dramático',
+        14 => 'Gerencia de Artes Plásticas y Visuales',
+        15 => 'Gerencia de Música',
+        16 => 'Gerencia de Literatura',
+        17 => 'Talento Humano',
+        18 => 'Gerencia Nidos',
+        19 => 'Gerencia Crea',
+        20 => 'Línea Estratégica Arte Ciencia y Tecnología',
+        21 => 'Línea Estratégica Emprendimiento',
+        22 => 'Convocatorias',
+        23 => 'Teatro Mayor Julio Mario Santo Domingo',
+        24 => 'Planetario de Bogotá',
+        25 => 'Área de Producción',
+        26 => 'Servicios Generales',
+        27 => 'Gestión Documental',
+        28 => 'Culturas en Común',
+        29 => 'Linea Arte y Memoria sin Fronteras',
+        30 => 'GALERÍA Santa Fe',
+        31 => 'Gerencia de Contratación',
+        32 => 'Subdirección de Infraestructura',
+        33 => 'Gerencia de Escenarios Territoriales',
+    ];
+
     /** Nombres legibles para cada clave de plataforma */
     private const NOMBRES_PLATAFORMA = [
         'sif'           => 'SIF',
@@ -70,8 +107,6 @@ class SolicitudAccesoController extends Controller
             'plataformas'      => $plataformas,
         ]);
 
-        $solicitud->load('dependencia');
-
         // ─── Enviar un correo independiente por cada plataforma seleccionada ────
 
         $datosUsuario = [
@@ -80,7 +115,7 @@ class SolicitudAccesoController extends Controller
             'numero_documento' => $solicitud->numero_documento,
             'usuario_red'      => $solicitud->usuario_red,
             'correo'           => $solicitud->correo,
-            'dependencia'      => $solicitud->dependencia?->nombre ?? 'Sin dependencia',
+            'dependencia'      => self::NOMBRES_DEPENDENCIA[$solicitud->dependencia_id] ?? "Dependencia #{$solicitud->dependencia_id}",
             'cargo_tipo'       => $solicitud->cargo_tipo,
             'cargo_nombre'     => $solicitud->cargo_nombre,
         ];
@@ -93,7 +128,7 @@ class SolicitudAccesoController extends Controller
 
             try {
                 Mail::to($destino)->send(
-                    new SolicitudAccesoMail($datosUsuario, $nombrePlataforma, $data, $firmaPath)
+                    new SolicitudAccesoMail($datosUsuario, $nombrePlataforma, $data, $firmaPath, $solicitud->id)
                 );
             } catch (\Throwable $e) {
                 Log::error("Error enviando correo de solicitud de acceso [{$nombrePlataforma}]: " . $e->getMessage(), [
