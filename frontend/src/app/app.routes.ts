@@ -28,6 +28,10 @@ export const routes: Routes = [
     component: PaginaSoporteComponent
   },
   {
+    path: 'solicitud-accesos',
+    component: FormularioAccesosComponent
+  },
+  {
     path: 'admin',
     component: AdminLayoutComponent,
     canActivate: [AdminGuard],

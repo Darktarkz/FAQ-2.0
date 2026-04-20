@@ -1,4 +1,10 @@
 <div class="formulario-soporte-container">
+  <!-- Spinner mientras se detecta el tipo de formulario -->
+  <div *ngIf="cargandoFormulario" class="cargando-overlay">
+    <div class="spinner"></div>
+  </div>
+
+  <ng-container *ngIf="!cargandoFormulario">
   <div class="header-soporte">
     <div class="header-icon">🎫</div>
     <h2>Soporte Técnico</h2>
@@ -205,4 +211,5 @@
       </small>
     </p>
   </form>
+  </ng-container>
 </div>

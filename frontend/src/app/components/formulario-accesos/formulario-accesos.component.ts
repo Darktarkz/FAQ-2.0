@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import {
   ReactiveFormsModule,
   FormBuilder,
@@ -211,7 +211,8 @@ export class FormularioAccesosComponent implements OnInit, OnDestroy {
 
   constructor(
     private fb: FormBuilder,
-    private solicitudService: SolicitudAccesoService
+    private solicitudService: SolicitudAccesoService,
+    private location: Location
   ) {}
 
   ngOnInit(): void {
@@ -457,6 +458,10 @@ export class FormularioAccesosComponent implements OnInit, OnDestroy {
     this.errorEnvio = null;
     this.form.reset();
     this.pandoraRolesDisponibles = [];
+  }
+
+  volver(): void {
+    this.location.back();
   }
 
   // ─── Helpers de validación para el template ───────────────────────────────

@@ -23,7 +23,7 @@ export class FormularioSoporteComponent implements OnInit, OnChanges {
   valoresCamposPersonalizados: { [key: string]: any } = {};
   
   enviando: boolean = false;
-  cargandoFormulario: boolean = false;
+  cargandoFormulario: boolean = true;
   mostrarExito: boolean = false;
   mostrarError: boolean = false;
   mensajeError: string = '';
@@ -50,7 +50,10 @@ export class FormularioSoporteComponent implements OnInit, OnChanges {
   }
 
   cargarCamposPersonalizados(): void {
-    if (!this.moduloId) return;
+    if (!this.moduloId) {
+      this.cargandoFormulario = false;
+      return;
+    }
     this.cargandoFormulario = true;
     
     // Si hay preguntaId, el backend aplica fallback pregunta → módulo automáticamente
@@ -58,7 +61,7 @@ export class FormularioSoporteComponent implements OnInit, OnChanges {
       next: (response) => {
         // Si la pregunta tiene asignado el formulario de solicitud de acceso, redirigir
         if (response.success && response.tipo === 'solicitud_acceso') {
-          this.router.navigate(['/solicitud-accesos']);
+          this.router.navigate(['/solicitud-accesos'], { replaceUrl: true });
           return;
         }
         if (response.success && response.campos) {

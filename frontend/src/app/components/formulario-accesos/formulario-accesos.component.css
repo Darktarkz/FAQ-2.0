@@ -1,30 +1,80 @@
-/* ─── Layout general ─────────────────────────────────────────────────────── */
+/* ─── Envoltorio de página ──────────────────────────────────────────────────── */
+.pagina-accesos-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #EBE9F2 0%, #f8f9fa 100%);
+    padding: 20px 20px 40px;
+}
+
+.header-pagina {
+    max-width: 860px;
+    margin: 0 auto 20px;
+}
+
+.btn-volver {
+    padding: 10px 20px;
+    background-color: #39275c;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-family: inherit;
+}
+
+.btn-volver:hover {
+    background-color: #5a3d8a;
+    transform: translateX(-5px);
+}
+
+@media (max-width: 768px) {
+    .pagina-accesos-container {
+        padding: 10px;
+    }
+}
+
+/* ─── Layout general ──────────────────────────────────────────────────────── */
 .formulario-container {
     max-width: 860px;
-    margin: 40px auto;
-    padding: 0 16px 60px;
+    margin: 0 auto;
+    padding: 0 0 60px;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     color: #2d2d2d;
 }
 
 .formulario-header {
     background: linear-gradient(135deg, #39275c 0%, #5a3d8a 100%);
-    color: #fff;
+    color: #ffffff;
     padding: 32px 36px;
     border-radius: 12px 12px 0 0;
     margin-bottom: 0;
+    text-align: center;
+}
+
+.header-icono {
+    font-size: 48px;
+    margin-bottom: 15px;
+    animation: floatIcon 3s ease-in-out infinite;
+}
+
+@keyframes floatIcon {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
 }
 
 .formulario-header h1 {
     margin: 0 0 8px;
     font-size: 1.5rem;
     font-weight: 700;
+    color: white;
 }
 
 .formulario-header p {
     margin: 0;
     opacity: 0.85;
     font-size: 0.97rem;
+    color: wheat;
 }
 
 form {
